@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Invitation personnalisee - <%= guest.first_name %> <%= guest.last_name %></title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
+    <link rel="stylesheet" href="/assets/plugins/global/plugins.bundle.css">
+    <link rel="stylesheet" href="/assets/css/style.bundle.css">
+    <link rel="stylesheet" href="/assets/css/model.css">
+    <link rel="stylesheet" href="/assets/css/model-all.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com/" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&family=Pinyon+Script&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/libs/animate.css/animate.min.css"/>
+    <link href="/libs/aos/aos.css" rel="stylesheet">
+
+    <script>
+        const globalSlug = 'dvora-nathan';
+        const globalEdit = '';
+        const guestToken = '<%= guest.token %>';
+    </script>
+
+    <style>
+        .personalized-header {
+            background: #d4af37;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .welcome, .event {
+            background-image: url('/assets/images/bg-leather.jpg');
+            background-repeat: repeat;
+        }
+        .event_plane_before:before {
+            content: " ";
+            position: absolute;
+            background-image: url("/assets/images/event-plane.png");
+            background-size: contain;
+            width: 430px;
+            height: 300px;
+            top: 0;
+            left: 0;
+            opacity: 0.4;
+        }
+    </style>
+</head>
+
+<body id="kt_app_body" class="header-fixed header-tablet-and-mobile-fixed aside-fixed aside-secondary-disabled">
+
+<div class="personalized-header">
+    Invitation personnalisee pour <%= guest.first_name %> <%= guest.last_name %>
+</div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12 text-center">
+            <h1 class="text-gold font-italianno" style="font-size: 60px;">Dvora & Nathan</h1>
+            <p class="font-bentham fs-22">Cher(ere) <%= guest.first_name %>,</p>
+            <p class="font-bentham fs-22">Nous avons l'immense plaisir de vous inviter a notre mariage!</p>
+
+            <h3 class="text-gold font-bentham mt-4">Vous etes convie(e) aux evenements suivants:</h3>
+            <ul style="list-style: none; padding: 0; margin: 20px 0;" class="font-bentham fs-22">
+                <% if (guest.invited_to_mairie) { %>
+                    <li>La Mairie - Mercredi 27 Mai 2026</li>
+                <% } %>
+                <% if (guest.invited_to_vin_honneur) { %>
+                    <li>Vin d'Honneur / Henne - Mercredi 27 Mai 2026</li>
+                <% } %>
+                <% if (guest.invited_to_chabbat) { %>
+                    <li>Le Chabbat - 27-28 Mai 2026</li>
+                <% } %>
+                <% if (guest.invited_to_houppa) { %>
+                    <li>Houppa / Soiree - Samedi 14 Juin 2026</li>
+                <% } %>
+            </ul>
+
+            <div style="background: #f9f9f9; padding: 30px; margin: 30px 0; border-radius: 10px;">
+                <h3 class="text-gold font-bentham">Confirmez votre presence</h3>
+                <form id="rsvpForm">
+                    <% if (guest.invited_to_mairie) { %>
+                        <div style="margin: 20px 0; text-align: left;">
+                            <label><input type="checkbox" name="mairie" value="1"> Je participerai a la Mairie</label>
+                        </div>
+                    <% } %>
+
+                    <% if (guest.invited_to_vin_honneur) { %>
+                        <div style="margin: 20px 0; text-align: left;">
+                            <label><input type="checkbox" name="vin_honneur" value="1"> Je participerai au Vin d'Honneur</label>
+                        </div>
+                    <% } %>
+
+                    <% if (guest.invited_to_chabbat) { %>
+                        <div style="margin: 20px 0; text-align: left;">
+                            <label><input type="checkbox" name="chabbat" value="1"> Je participerai au Chabbat</label>
+                        </div>
+                    <% } %>
+
+                    <% if (guest.invited_to_houppa) { %>
+                        <div style="margin: 20px 0; text-align: left;">
+                            <label><input type="checkbox" name="houppa" value="1"> Je participerai a la Houppa/Soiree</label>
+                        </div>
+                    <% } %>
+
+                    <div style="margin: 20px 0; text-align: left;">
+                        <label>Un petit mot pour les maries:</label><br>
+                        <textarea name="message" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                    </div>
+
+                    <button type="submit" style="background: #d4af37; color: white; padding: 15px 40px; border: none; border-radius: 5px; font-size: 18px; cursor: pointer;">
+                        Envoyer ma reponse
+                    </button>
+                </form>
+
+                <div id="responseMessage" style="margin-top: 20px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/plugins/global/plugins.bundle.js"></script>
+<script src="/assets/js/scripts.bundle.js"></script>
+
+<script>
+document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const events = {
+        mairie: { attend: formData.get('mairie') === '1', plusOne: 0 },
+        vin_honneur: { attend: formData.get('vin_honneur') === '1', plusOne: 0 },
+        chabbat: { attend: formData.get('chabbat') === '1', plusOne: 0 },
+        houppa: { attend: formData.get('houppa') === '1', plusOne: 0 }
+    };
+
+    const response = await fetch(`/api/guests/${guestToken}/response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            events,
+            message: formData.get('message')
+        })
+    });
+
+    const result = await response.json();
+
+    const messageDiv = document.getElementById('responseMessage');
+    messageDiv.style.display = 'block';
+    messageDiv.style.padding = '20px';
+    messageDiv.style.borderRadius = '5px';
+    messageDiv.style.textAlign = 'center';
+
+    if (response.ok) {
+        messageDiv.style.background = '#d4edda';
+        messageDiv.style.color = '#155724';
+        messageDiv.innerHTML = 'Merci! Votre reponse a ete enregistree avec succes.';
+        e.target.reset();
+    } else {
+        messageDiv.style.background = '#f8d7da';
+        messageDiv.style.color = '#721c24';
+        messageDiv.innerHTML = 'Erreur lors de l\'envoi. Veuillez reessayer.';
+    }
+});
+</script>
+
+</body>
+</html>

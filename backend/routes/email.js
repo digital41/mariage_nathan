@@ -1,242 +1,291 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
-const { db } = require('../server');
+const { run, get, all } = require('../utils/database');
+const { checkAuth, emailRateLimit } = require('../middleware/auth');
+const { asyncHandler, errors } = require('../middleware/errorHandler');
+const { generateInvitationEmail, generateInvitationEmailText } = require('../utils/emailTemplate');
 
-// Configuration du transporteur email
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.EMAIL_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Configuration du transporteur email (lazy initialization)
+let transporter = null;
 
-// Middleware d'authentification
-const checkAuth = (req, res, next) => {
-  const { password } = req.headers;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Non autorisé' });
+const getTransporter = () => {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      pool: true, // Utiliser un pool de connexions pour de meilleures performances
+      maxConnections: 5,
+      maxMessages: 100,
+      rateDelta: 1000, // Délai minimum entre les emails
+      rateLimit: 10 // Max 10 emails par seconde
+    });
   }
-  next();
+  return transporter;
 };
 
-// Envoyer une invitation par email
-router.post('/send/:guestId', checkAuth, async (req, res) => {
+// Tous les endpoints email requièrent une authentification
+router.use(checkAuth);
+
+// GET /test - Tester la configuration email
+router.get('/test', asyncHandler(async (req, res) => {
+  try {
+    await getTransporter().verify();
+    res.json({
+      success: true,
+      message: 'Configuration email valide',
+      config: {
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE === 'true',
+        from: process.env.EMAIL_FROM
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Configuration email invalide',
+      details: error.message
+    });
+  }
+}));
+
+// POST /send/:guestId - Envoyer une invitation à un invité
+router.post('/send/:guestId', emailRateLimit, asyncHandler(async (req, res) => {
   const { guestId } = req.params;
 
-  db.get('SELECT * FROM guests WHERE id = ?', [guestId], async (err, guest) => {
-    if (err || !guest) {
-      return res.status(404).json({ error: 'Invité non trouvé' });
+  const guest = await get('SELECT * FROM guests WHERE id = ?', [guestId]);
+
+  if (!guest) {
+    throw errors.notFound('Invité');
+  }
+
+  if (!guest.email) {
+    throw errors.badRequest('Cet invité n\'a pas d\'adresse email');
+  }
+
+  const invitationLink = `${process.env.SITE_URL}/invitation/${guest.token}`;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: guest.email,
+    subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
+    html: generateInvitationEmail(guest, invitationLink),
+    text: generateInvitationEmailText(guest, invitationLink)
+  };
+
+  try {
+    const info = await getTransporter().sendMail(mailOptions);
+
+    // Mettre à jour le statut d'envoi
+    await run(
+      'UPDATE guests SET email_sent = 1, email_sent_date = datetime(\'now\') WHERE id = ?',
+      [guestId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Email envoyé avec succès',
+      data: {
+        guestId: guest.id,
+        email: guest.email,
+        messageId: info.messageId
+      }
+    });
+  } catch (error) {
+    console.error('Erreur envoi email:', error);
+    throw errors.serverError('Erreur lors de l\'envoi de l\'email: ' + error.message);
+  }
+}));
+
+// POST /send-bulk - Envoyer des invitations à plusieurs invités
+router.post('/send-bulk', asyncHandler(async (req, res) => {
+  const { guestIds } = req.body;
+
+  if (!Array.isArray(guestIds) || guestIds.length === 0) {
+    throw errors.badRequest('Liste d\'invités invalide');
+  }
+
+  // Limiter le nombre d'envois en une fois
+  if (guestIds.length > 50) {
+    throw errors.badRequest('Maximum 50 emails par envoi groupé');
+  }
+
+  const results = {
+    success: [],
+    failed: [],
+    skipped: []
+  };
+
+  // Récupérer tous les invités en une seule requête
+  const placeholders = guestIds.map(() => '?').join(',');
+  const guests = await all(
+    `SELECT * FROM guests WHERE id IN (${placeholders})`,
+    guestIds
+  );
+
+  // Créer un map pour un accès rapide
+  const guestsMap = new Map(guests.map(g => [g.id, g]));
+
+  for (const guestId of guestIds) {
+    const guest = guestsMap.get(guestId);
+
+    if (!guest) {
+      results.failed.push({
+        guestId,
+        error: 'Invité non trouvé'
+      });
+      continue;
+    }
+
+    if (!guest.email) {
+      results.skipped.push({
+        guestId,
+        name: `${guest.first_name} ${guest.last_name}`,
+        reason: 'Pas d\'adresse email'
+      });
+      continue;
     }
 
     const invitationLink = `${process.env.SITE_URL}/invitation/${guest.token}`;
-
-    const events = [];
-    if (guest.invited_to_mairie) events.push('La Mairie');
-    if (guest.invited_to_vin_honneur) events.push('Vin d\'Honneur / Henné');
-    if (guest.invited_to_chabbat) events.push('Le Chabbat');
-    if (guest.invited_to_houppa) events.push('Houppa / Soirée');
 
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: guest.email,
       subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Georgia', serif; background-color: #f5f5f5; }
-            .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; }
-            .header { text-align: center; color: #d4af37; font-size: 32px; font-family: 'Pinyon Script', cursive; margin-bottom: 20px; }
-            .content { color: #333; line-height: 1.8; }
-            .button { display: inline-block; background-color: #d4af37; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .events { background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #d4af37; }
-            .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">Dvora & Nathan</div>
-
-            <div class="content">
-              <p>Cher(ère) ${guest.first_name} ${guest.last_name},</p>
-
-              <p>C'est avec une immense joie que nous vous invitons à célébrer notre mariage le <strong>14 Juin 2026</strong>.</p>
-
-              <div class="events">
-                <strong>Vous êtes convié(e) aux événements suivants :</strong>
-                <ul>
-                  ${events.map(event => `<li>${event}</li>`).join('')}
-                </ul>
-              </div>
-
-              <p>Pour consulter tous les détails de votre invitation personnalisée et confirmer votre présence, veuillez cliquer sur le lien ci-dessous :</p>
-
-              <div style="text-align: center;">
-                <a href="${invitationLink}" class="button">Voir mon invitation</a>
-              </div>
-
-              <p>Nous avons hâte de partager ce moment unique avec vous !</p>
-
-              <p style="margin-top: 30px;">Avec toute notre affection,<br><strong>Dvora & Nathan</strong></p>
-            </div>
-
-            <div class="footer">
-              Ce lien d'invitation est personnel et unique. Ne le partagez pas.
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      html: generateInvitationEmail(guest, invitationLink),
+      text: generateInvitationEmailText(guest, invitationLink)
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
 
-      // Mettre à jour le statut d'envoi
-      db.run(
-        'UPDATE guests SET email_sent = 1, email_sent_date = ? WHERE id = ?',
-        [new Date().toISOString(), guestId],
-        (err) => {
-          if (err) {
-            console.error('Erreur mise à jour statut:', err);
-          }
-        }
+      await run(
+        'UPDATE guests SET email_sent = 1, email_sent_date = datetime(\'now\') WHERE id = ?',
+        [guestId]
       );
 
-      res.json({ success: true, message: 'Email envoyé avec succès' });
+      results.success.push({
+        guestId,
+        email: guest.email,
+        name: `${guest.first_name} ${guest.last_name}`
+      });
     } catch (error) {
-      console.error('Erreur envoi email:', error);
-      res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email' });
+      results.failed.push({
+        guestId,
+        email: guest.email,
+        error: error.message
+      });
+    }
+
+    // Pause entre chaque email pour éviter les limitations
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  res.json({
+    success: true,
+    message: 'Envoi groupé terminé',
+    data: {
+      total: guestIds.length,
+      sent: results.success.length,
+      failed: results.failed.length,
+      skipped: results.skipped.length,
+      results
     }
   });
-});
+}));
 
-// Envoyer des invitations à plusieurs invités
-router.post('/send-bulk', checkAuth, async (req, res) => {
-  const { guestIds } = req.body;
+// POST /preview/:guestId - Prévisualiser un email (sans envoyer)
+router.post('/preview/:guestId', asyncHandler(async (req, res) => {
+  const { guestId } = req.params;
 
+  const guest = await get('SELECT * FROM guests WHERE id = ?', [guestId]);
+
+  if (!guest) {
+    throw errors.notFound('Invité');
+  }
+
+  const invitationLink = `${process.env.SITE_URL}/invitation/${guest.token}`;
+
+  res.json({
+    success: true,
+    data: {
+      to: guest.email,
+      subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
+      html: generateInvitationEmail(guest, invitationLink),
+      invitationLink
+    }
+  });
+}));
+
+// POST /resend-failed - Renvoyer les emails échoués
+router.post('/resend-failed', asyncHandler(async (req, res) => {
+  // Récupérer tous les invités dont l'email n'a pas été envoyé
+  const guests = await all(
+    'SELECT * FROM guests WHERE email_sent = 0 AND email IS NOT NULL AND email != \'\''
+  );
+
+  if (guests.length === 0) {
+    return res.json({
+      success: true,
+      message: 'Aucun email à renvoyer',
+      data: { count: 0 }
+    });
+  }
+
+  const guestIds = guests.map(g => g.id);
+
+  // Réutiliser la logique d'envoi groupé
+  req.body.guestIds = guestIds;
+
+  // Rediriger vers send-bulk
   const results = {
     success: [],
     failed: []
   };
 
-  for (const guestId of guestIds) {
+  for (const guest of guests) {
+    const invitationLink = `${process.env.SITE_URL}/invitation/${guest.token}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: guest.email,
+      subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
+      html: generateInvitationEmail(guest, invitationLink),
+      text: generateInvitationEmailText(guest, invitationLink)
+    };
+
     try {
-      await new Promise((resolve, reject) => {
-        db.get('SELECT * FROM guests WHERE id = ?', [guestId], async (err, guest) => {
-          if (err || !guest) {
-            results.failed.push({ guestId, error: 'Invité non trouvé' });
-            return resolve();
-          }
+      await getTransporter().sendMail(mailOptions);
 
-          const invitationLink = `${process.env.SITE_URL}/invitation/${guest.token}`;
+      await run(
+        'UPDATE guests SET email_sent = 1, email_sent_date = datetime(\'now\') WHERE id = ?',
+        [guest.id]
+      );
 
-          const events = [];
-          if (guest.invited_to_mairie) events.push('La Mairie');
-          if (guest.invited_to_vin_honneur) events.push('Vin d\'Honneur / Henné');
-          if (guest.invited_to_chabbat) events.push('Le Chabbat');
-          if (guest.invited_to_houppa) events.push('Houppa / Soirée');
-
-          const mailOptions = {
-            from: process.env.EMAIL_FROM,
-            to: guest.email,
-            subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <meta charset="utf-8">
-                <style>
-                  body { font-family: 'Georgia', serif; background-color: #f5f5f5; }
-                  .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; }
-                  .header { text-align: center; color: #d4af37; font-size: 32px; margin-bottom: 20px; }
-                  .content { color: #333; line-height: 1.8; }
-                  .button { display: inline-block; background-color: #d4af37; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                  .events { background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #d4af37; }
-                  .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">Dvora & Nathan</div>
-
-                  <div class="content">
-                    <p>Cher(ère) ${guest.first_name} ${guest.last_name},</p>
-
-                    <p>C'est avec une immense joie que nous vous invitons à célébrer notre mariage le <strong>14 Juin 2026</strong>.</p>
-
-                    <div class="events">
-                      <strong>Vous êtes convié(e) aux événements suivants :</strong>
-                      <ul>
-                        ${events.map(event => `<li>${event}</li>`).join('')}
-                      </ul>
-                    </div>
-
-                    <p>Pour consulter tous les détails de votre invitation personnalisée et confirmer votre présence, veuillez cliquer sur le lien ci-dessous :</p>
-
-                    <div style="text-align: center;">
-                      <a href="${invitationLink}" class="button">Voir mon invitation</a>
-                    </div>
-
-                    <p>Nous avons hâte de partager ce moment unique avec vous !</p>
-
-                    <p style="margin-top: 30px;">Avec toute notre affection,<br><strong>Dvora & Nathan</strong></p>
-                  </div>
-
-                  <div class="footer">
-                    Ce lien d'invitation est personnel et unique. Ne le partagez pas.
-                  </div>
-                </div>
-              </body>
-              </html>
-            `
-          };
-
-          try {
-            await transporter.sendMail(mailOptions);
-
-            db.run(
-              'UPDATE guests SET email_sent = 1, email_sent_date = ? WHERE id = ?',
-              [new Date().toISOString(), guestId]
-            );
-
-            results.success.push({ guestId, email: guest.email });
-            resolve();
-          } catch (error) {
-            results.failed.push({ guestId, error: error.message });
-            resolve();
-          }
-        });
-      });
-
-      // Pause de 1 seconde entre chaque email pour éviter les limitations
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      results.success.push({ guestId: guest.id, email: guest.email });
     } catch (error) {
-      results.failed.push({ guestId, error: error.message });
+      results.failed.push({ guestId: guest.id, error: error.message });
     }
+
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   res.json({
-    message: 'Envoi terminé',
-    results
+    success: true,
+    message: 'Renvoi terminé',
+    data: {
+      total: guests.length,
+      sent: results.success.length,
+      failed: results.failed.length,
+      results
+    }
   });
-});
-
-// Tester la configuration email
-router.get('/test', checkAuth, async (req, res) => {
-  try {
-    await transporter.verify();
-    res.json({ success: true, message: 'Configuration email valide' });
-  } catch (error) {
-    res.status(500).json({ error: 'Configuration email invalide', details: error.message });
-  }
-});
+}));
 
 module.exports = router;

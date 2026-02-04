@@ -1,121 +1,256 @@
 const express = require('express');
 const path = require('path');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 require('dotenv').config();
+
+const { initDatabase, run, get, all } = require('./utils/database');
+const { rateLimit, loginRateLimit } = require('./middleware/auth');
+const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
+const { validatePublicResponseMiddleware } = require('./middleware/validation');
+
+// Import des routes
+const adminRoutes = require('./routes/admin');
+const guestRoutes = require('./routes/guests');
+const emailRoutes = require('./routes/email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// ============================================
+// MIDDLEWARE GLOBAUX
+// ============================================
 
-// Servir les fichiers statiques depuis le dossier public
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.SITE_URL
+    : '*',
+  credentials: true
+}));
 
-// Template engine
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// Body parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection
-const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) => {
-  if (err) {
-    console.error('Erreur de connexion à la base de données:', err);
-  } else {
-    console.log('Connecté à la base de données SQLite');
-  }
-});
+// Rate limiting global (100 requêtes par minute)
+app.use(rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: 'Trop de requêtes, veuillez réessayer plus tard'
+}));
 
-// Routes
-const guestRoutes = require('./routes/guests');
-const adminRoutes = require('./routes/admin');
-const emailRoutes = require('./routes/email');
-
-app.use('/api/guests', guestRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/email', emailRoutes);
-
-// Route pour afficher l'invitation personnalisée
-app.get('/invitation/:token', (req, res) => {
-  const token = req.params.token;
-
-  db.get('SELECT * FROM guests WHERE token = ?', [token], (err, guest) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Erreur serveur');
-    }
-
-    if (!guest) {
-      return res.status(404).send('Invitation non trouvée');
-    }
-
-    // Récupérer les événements auxquels l'invité est convié
-    db.all('SELECT * FROM guest_events WHERE guest_id = ?', [guest.id], (err, events) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send('Erreur serveur');
-      }
-
-      res.render('invitation', { guest, events });
+// Logging des requêtes en développement
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
     });
+    next();
   });
+}
+
+// Headers de sécurité
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
 });
 
-// Route de base
+// ============================================
+// FICHIERS STATIQUES
+// ============================================
+
+// Servir les fichiers statiques du site public
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+}));
+
+// Servir les fichiers de l'admin
+app.use('/admin', express.static(path.join(__dirname, 'public'), {
+  maxAge: 0 // Pas de cache pour l'admin
+}));
+
+// ============================================
+// ROUTES PRINCIPALES
+// ============================================
+
+// Page d'accueil
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-// Route pour les reponses publiques (formulaire du site)
-app.post('/api/guests/public-response', (req, res) => {
-  const { name, email, events, message } = req.body;
-
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Nom et email requis' });
-  }
-
-  // Enregistrer la reponse dans une table dediee
-  db.run(
-    `INSERT INTO public_responses (name, email, mairie, vin_honneur, chabbat, houppa, message, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-    [
-      name,
-      email,
-      events?.mairie?.attend ? 1 : 0,
-      events?.vin_honneur?.attend ? 1 : 0,
-      events?.chabbat?.attend ? 1 : 0,
-      events?.houppa?.attend ? 1 : 0,
-      message || ''
-    ],
-    function(err) {
-      if (err) {
-        console.error('Erreur enregistrement reponse:', err);
-        return res.status(500).json({ error: 'Erreur serveur' });
-      }
-      res.json({ success: true, message: 'Reponse enregistree' });
-    }
-  );
-});
-
-// Route admin
+// Page admin
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Une erreur est survenue!' });
+// Route de vérification du mot de passe admin (avec rate limiting spécifique)
+app.post('/api/auth/login', loginRateLimit, asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Mot de passe requis'
+    });
+  }
+
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({
+      success: false,
+      error: 'Mot de passe incorrect'
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Authentification réussie'
+  });
+}));
+
+// ============================================
+// API ROUTES
+// ============================================
+
+// Routes admin (protégées par authentification)
+app.use('/api/admin', adminRoutes);
+
+// Routes invités (publiques avec token)
+app.use('/api/guests', guestRoutes);
+
+// Routes email (protégées par authentification)
+app.use('/api/email', emailRoutes);
+
+// ============================================
+// ROUTES PUBLIQUES
+// ============================================
+
+// Réponse publique depuis le formulaire du site
+app.post('/api/public/response', validatePublicResponseMiddleware, asyncHandler(async (req, res) => {
+  const data = req.validatedData;
+
+  const result = await run(
+    `INSERT INTO public_responses (name, guests, mairie, vin_honneur, chabbat, houppa, message, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    [
+      data.name,
+      data.guests,
+      data.mairie ? 1 : 0,
+      data.vin_honneur ? 1 : 0,
+      data.chabbat ? 1 : 0,
+      data.houppa ? 1 : 0,
+      data.message
+    ]
+  );
+
+  console.log(`Nouvelle réponse publique: ${data.name} (${data.guests} personnes)`);
+
+  res.status(201).json({
+    success: true,
+    message: 'Merci ! Votre réponse a été enregistrée avec succès',
+    data: {
+      id: result.lastID
+    }
+  });
+}));
+
+// Route legacy pour compatibilité (redirige vers la nouvelle route)
+app.post('/api/guests/public-response', validatePublicResponseMiddleware, asyncHandler(async (req, res) => {
+  const data = req.validatedData;
+
+  const result = await run(
+    `INSERT INTO public_responses (name, guests, mairie, vin_honneur, chabbat, houppa, message, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    [
+      data.name,
+      data.guests,
+      data.mairie ? 1 : 0,
+      data.vin_honneur ? 1 : 0,
+      data.chabbat ? 1 : 0,
+      data.houppa ? 1 : 0,
+      data.message
+    ]
+  );
+
+  res.json({
+    success: true,
+    message: 'Réponse enregistrée avec succès'
+  });
+}));
+
+// ============================================
+// HEALTH CHECK
+// ============================================
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
-// Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
-  console.log(`Admin: http://localhost:${PORT}/admin`);
+// ============================================
+// GESTION DES ERREURS
+// ============================================
+
+// Route non trouvée
+app.use(notFoundHandler);
+
+// Gestionnaire d'erreurs global
+app.use(errorHandler);
+
+// ============================================
+// DÉMARRAGE DU SERVEUR
+// ============================================
+
+const startServer = async () => {
+  try {
+    // Initialiser la base de données
+    await initDatabase();
+
+    // Démarrer le serveur
+    app.listen(PORT, () => {
+      console.log('\n========================================');
+      console.log('   Serveur Mariage Dvora & Nathan');
+      console.log('========================================');
+      console.log(`Mode:  ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Site:  http://localhost:${PORT}`);
+      console.log(`Admin: http://localhost:${PORT}/admin`);
+      console.log(`API:   http://localhost:${PORT}/api`);
+      console.log('========================================\n');
+    });
+
+  } catch (error) {
+    console.error('Erreur lors du démarrage du serveur:', error);
+    process.exit(1);
+  }
+};
+
+// Gestion de l'arrêt propre
+process.on('SIGTERM', async () => {
+  console.log('\nArrêt du serveur...');
+  const { closeDatabase } = require('./utils/database');
+  await closeDatabase();
+  process.exit(0);
 });
 
-// Export pour utilisation dans d'autres fichiers
-module.exports = { app, db };
+process.on('SIGINT', async () => {
+  console.log('\nArrêt du serveur...');
+  const { closeDatabase } = require('./utils/database');
+  await closeDatabase();
+  process.exit(0);
+});
+
+// Démarrer le serveur
+startServer();
+
+module.exports = { app };

@@ -1,64 +1,162 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../server');
+const { run, get, all } = require('../utils/database');
+const { asyncHandler, errors } = require('../middleware/errorHandler');
+const { sanitizeString } = require('../middleware/validation');
 
-// Récupérer un invité par token
-router.get('/:token', (req, res) => {
+// GET /:token - Récupérer un invité par son token unique
+router.get('/:token', asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  db.get('SELECT * FROM guests WHERE token = ?', [token], (err, guest) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
+  // Validation du format du token (UUID v4)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(token)) {
+    throw errors.badRequest('Token invalide');
+  }
 
-    if (!guest) {
-      return res.status(404).json({ error: 'Invité non trouvé' });
-    }
+  const guest = await get('SELECT * FROM guests WHERE token = ?', [token]);
 
-    res.json(guest);
+  if (!guest) {
+    throw errors.notFound('Invité');
+  }
+
+  // Récupérer les réponses existantes pour cet invité
+  const existingResponses = await all(
+    'SELECT event_name, will_attend, plus_one FROM event_responses WHERE guest_id = ?',
+    [guest.id]
+  );
+
+  // Formater les réponses en objet
+  const responses = {};
+  existingResponses.forEach(r => {
+    responses[r.event_name] = {
+      willAttend: Boolean(r.will_attend),
+      plusOne: r.plus_one || 0
+    };
   });
-});
 
-// Enregistrer la réponse d'un invité
-router.post('/:token/response', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      id: guest.id,
+      firstName: guest.first_name,
+      lastName: guest.last_name,
+      email: guest.email,
+      invitedTo: {
+        mairie: Boolean(guest.invited_to_mairie),
+        vinHonneur: Boolean(guest.invited_to_vin_honneur),
+        chabbat: Boolean(guest.invited_to_chabbat),
+        houppa: Boolean(guest.invited_to_houppa)
+      },
+      responses,
+      hasResponded: existingResponses.length > 0
+    }
+  });
+}));
+
+// POST /:token/response - Enregistrer la réponse d'un invité
+router.post('/:token/response', asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { events, message } = req.body;
 
+  // Validation du format du token
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(token)) {
+    throw errors.badRequest('Token invalide');
+  }
+
   // Trouver l'invité
-  db.get('SELECT * FROM guests WHERE token = ?', [token], (err, guest) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erreur serveur' });
+  const guest = await get('SELECT * FROM guests WHERE token = ?', [token]);
+
+  if (!guest) {
+    throw errors.notFound('Invité');
+  }
+
+  // Valider les événements
+  if (!events || typeof events !== 'object') {
+    throw errors.badRequest('Les réponses aux événements sont requises');
+  }
+
+  const validEvents = ['mairie', 'vin_honneur', 'chabbat', 'houppa'];
+  const eventResponses = [];
+
+  for (const [eventName, eventData] of Object.entries(events)) {
+    if (!validEvents.includes(eventName)) {
+      continue; // Ignorer les événements invalides
     }
 
-    if (!guest) {
-      return res.status(404).json({ error: 'Invité non trouvé' });
+    // Vérifier que l'invité est bien invité à cet événement
+    const eventField = `invited_to_${eventName}`;
+    if (!guest[eventField]) {
+      continue; // Ignorer si l'invité n'est pas invité à cet événement
     }
 
-    // Enregistrer les réponses pour chaque événement
-    const stmt = db.prepare(`
-      INSERT OR REPLACE INTO event_responses (guest_id, event_name, will_attend, plus_one)
-      VALUES (?, ?, ?, ?)
-    `);
+    const willAttend = Boolean(eventData.attend);
+    const plusOne = Math.min(Math.max(parseInt(eventData.plusOne) || 0, 0), 10);
 
-    Object.entries(events).forEach(([eventName, eventData]) => {
-      stmt.run(guest.id, eventName, eventData.attend ? 1 : 0, eventData.plusOne || 0);
+    eventResponses.push({
+      guestId: guest.id,
+      eventName,
+      willAttend,
+      plusOne: willAttend ? plusOne : 0 // Pas de +1 si ne vient pas
     });
+  }
 
-    stmt.finalize();
+  // Enregistrer les réponses (INSERT OR REPLACE pour permettre les modifications)
+  for (const response of eventResponses) {
+    await run(
+      `INSERT OR REPLACE INTO event_responses (guest_id, event_name, will_attend, plus_one, created_at)
+       VALUES (?, ?, ?, ?, datetime('now'))`,
+      [response.guestId, response.eventName, response.willAttend ? 1 : 0, response.plusOne]
+    );
+  }
 
-    // Enregistrer le message si fourni
-    if (message && message.trim()) {
-      db.run(
-        'INSERT INTO messages (guest_id, message) VALUES (?, ?)',
-        [guest.id, message],
-        (err) => {
-          if (err) console.error('Erreur enregistrement message:', err);
-        }
-      );
+  // Enregistrer le message si fourni
+  if (message && typeof message === 'string' && message.trim()) {
+    const sanitizedMessage = sanitizeString(message, 2000);
+    await run(
+      'INSERT INTO messages (guest_id, message, created_at) VALUES (?, ?, datetime(\'now\'))',
+      [guest.id, sanitizedMessage]
+    );
+  }
+
+  res.json({
+    success: true,
+    message: 'Votre réponse a été enregistrée avec succès',
+    data: {
+      responsesCount: eventResponses.length,
+      hasMessage: Boolean(message && message.trim())
     }
-
-    res.json({ success: true, message: 'Réponse enregistrée avec succès' });
   });
-});
+}));
+
+// GET /:token/status - Vérifier le statut de réponse d'un invité
+router.get('/:token/status', asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(token)) {
+    throw errors.badRequest('Token invalide');
+  }
+
+  const guest = await get('SELECT id, first_name FROM guests WHERE token = ?', [token]);
+
+  if (!guest) {
+    throw errors.notFound('Invité');
+  }
+
+  const responseCount = await get(
+    'SELECT COUNT(*) as count FROM event_responses WHERE guest_id = ?',
+    [guest.id]
+  );
+
+  res.json({
+    success: true,
+    data: {
+      hasResponded: responseCount.count > 0,
+      firstName: guest.first_name
+    }
+  });
+}));
 
 module.exports = router;

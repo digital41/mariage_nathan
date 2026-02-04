@@ -1,0 +1,23 @@
+services:
+  mariage-nathan:
+    image: ghcr.io/digital41/mariage_nathan:latest
+    container_name: mariage-nathan
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SITE_URL=${SITE_URL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+    volumes:
+      - mariage-data:/app/data
+
+volumes:
+  mariage-data:

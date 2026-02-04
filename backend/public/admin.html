@@ -5,138 +5,875 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Mariage Dvora & Nathan</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f5f5f5; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { background: #d4af37; color: white; padding: 20px; text-align: center; }
-        .header h1 { font-size: 28px; margin-bottom: 5px; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .stat-card h3 { color: #666; font-size: 14px; margin-bottom: 10px; }
-        .stat-card .number { font-size: 32px; color: #d4af37; font-weight: bold; }
-        .tabs { display: flex; gap: 10px; margin: 20px 0; border-bottom: 2px solid #ddd; }
-        .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-size: 16px; }
-        .tab.active { border-bottom: 3px solid #d4af37; color: #d4af37; }
-        .tab-content { display: none; background: white; padding: 20px; border-radius: 8px; }
-        .tab-content.active { display: block; }
-        .btn { padding: 10px 20px; background: #d4af37; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .btn:hover { background: #c4a035; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #c82333; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #f8f9fa; font-weight: bold; }
-        tr:hover { background: #f8f9fa; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal-content { background: white; width: 90%; max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 8px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .checkbox-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .login-container { max-width: 400px; margin: 100px auto; background: white; padding: 40px; border-radius: 8px; }
-        .error { color: red; margin: 10px 0; }
-        .success { color: green; margin: 10px 0; }
-        .hidden { display: none; }
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b8972f;
+            --danger: #dc3545;
+            --danger-dark: #c82333;
+            --success: #28a745;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --dark: #343a40;
+            --light: #f8f9fa;
+            --white: #ffffff;
+            --gray: #6c757d;
+            --border: #dee2e6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Stats Grid */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            color: var(--gray);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-card .sub-stats {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 15px;
+            color: var(--gray);
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-badge {
+            background: var(--primary);
+            color: var(--white);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-right {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 10px 15px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            font-size: 14px;
+            width: 250px;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-dark);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--dark);
+        }
+
+        .btn-outline:hover {
+            background: var(--light);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--light);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-primary {
+            background: #fef5e0;
+            color: #856404;
+        }
+
+        /* Event tags */
+        .event-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .event-tag {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        /* Action buttons */
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 95%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: var(--dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .checkbox-group label:hover {
+            border-color: var(--primary);
+            background: #fef5e0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        /* Login */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-container h2 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .login-container .logo {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: var(--white);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: var(--dark); }
+        .toast-info { background: var(--info); }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar-right {
+                margin-left: 0;
+            }
+
+            .search-box input {
+                width: 100%;
+            }
+        }
+
+        .hidden { display: none !important; }
+
+        /* Message preview */
+        .message-preview {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .message-full {
+            max-width: 500px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <!-- Login Screen -->
     <div id="loginScreen" class="login-container">
-        <h2 style="text-align: center; color: #d4af37; margin-bottom: 30px;">Administration</h2>
-        <div class="form-group">
-            <label>Mot de passe:</label>
-            <input type="password" id="adminPassword" placeholder="Entrez le mot de passe">
-        </div>
-        <button class="btn" style="width: 100%;" onclick="login()">Se connecter</button>
-        <div id="loginError" class="error hidden"></div>
+        <div class="logo">💍</div>
+        <h2>Administration</h2>
+        <form id="loginForm" onsubmit="login(event)">
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="adminPassword" placeholder="Entrez le mot de passe" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Se connecter</button>
+        </form>
+        <div id="loginError" class="alert alert-danger hidden" style="margin-top: 20px;"></div>
     </div>
 
     <!-- Main Admin Panel -->
     <div id="adminPanel" class="hidden">
         <div class="header">
             <h1>Administration - Mariage Dvora & Nathan</h1>
-            <p>Gestion des invitations</p>
+            <p>Gestion des invitations - 14 Juin 2026</p>
         </div>
 
         <div class="container">
             <!-- Statistics -->
             <div class="stats">
                 <div class="stat-card">
-                    <h3>Total Invités</h3>
+                    <h3>Total Invit&eacute;s</h3>
                     <div class="number" id="totalGuests">0</div>
+                    <div class="sub-stats" id="guestsSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>Emails Envoyés</h3>
+                    <h3>Emails Envoy&eacute;s</h3>
                     <div class="number" id="emailsSent">0</div>
+                    <div class="sub-stats" id="emailsSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>Réponses Reçues</h3>
+                    <h3>R&eacute;ponses Re&ccedil;ues</h3>
                     <div class="number" id="responsesReceived">0</div>
+                    <div class="sub-stats" id="responsesSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>Messages</h3>
-                    <div class="number" id="messagesReceived">0</div>
+                    <h3>R&eacute;ponses Publiques</h3>
+                    <div class="number" id="publicResponses">0</div>
+                    <div class="sub-stats" id="publicSubStats"></div>
                 </div>
             </div>
 
             <!-- Tabs -->
             <div class="tabs">
-                <button class="tab active" onclick="showTab('guests')">Invités</button>
-                <button class="tab" onclick="showTab('responses')">Réponses</button>
-                <button class="tab" onclick="showTab('messages')">Messages</button>
+                <button class="tab active" onclick="showTab('guests')">
+                    Invit&eacute;s <span class="tab-badge" id="guestsBadge">0</span>
+                </button>
+                <button class="tab" onclick="showTab('responses')">
+                    R&eacute;ponses <span class="tab-badge" id="responsesBadge">0</span>
+                </button>
+                <button class="tab" onclick="showTab('public')">
+                    R&eacute;ponses Publiques <span class="tab-badge" id="publicBadge">0</span>
+                </button>
+                <button class="tab" onclick="showTab('messages')">
+                    Messages <span class="tab-badge" id="messagesBadge">0</span>
+                </button>
             </div>
 
-            <!-- Tab: Invités -->
+            <!-- Tab: Invit&eacute;s -->
             <div id="tab-guests" class="tab-content active">
-                <div style="margin-bottom: 20px;">
-                    <button class="btn" onclick="openAddGuestModal()">+ Ajouter un invité</button>
-                    <button class="btn" onclick="sendBulkEmails()">Envoyer emails sélectionnés</button>
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="openGuestModal()">
+                            + Ajouter un invit&eacute;
+                        </button>
+                        <button class="btn btn-success" onclick="sendBulkEmails()">
+                            Envoyer emails s&eacute;lectionn&eacute;s
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="search-box">
+                            <input type="text" id="guestSearch" placeholder="Rechercher..." oninput="filterGuests()">
+                        </div>
+                        <button class="btn btn-outline" onclick="exportData('guests')">
+                            Exporter CSV
+                        </button>
+                    </div>
                 </div>
-                <table id="guestsTable">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Événements</th>
-                            <th>Email envoyé</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="guestsTableBody"></tbody>
-                </table>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>T&eacute;l&eacute;phone</th>
+                                <th>&Eacute;v&eacute;nements</th>
+                                <th>Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guestsTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="guestsEmpty" class="empty-state hidden">
+                    <div class="icon">📋</div>
+                    <h3>Aucun invit&eacute;</h3>
+                    <p>Commencez par ajouter des invit&eacute;s &agrave; votre liste.</p>
+                </div>
             </div>
 
-            <!-- Tab: Réponses -->
+            <!-- Tab: R&eacute;ponses -->
             <div id="tab-responses" class="tab-content">
-                <table id="responsesTable">
-                    <thead>
-                        <tr>
-                            <th>Invité</th>
-                            <th>Email</th>
-                            <th>Événement</th>
-                            <th>Présence</th>
-                            <th>+1</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="responsesTableBody"></tbody>
-                </table>
+                <div class="toolbar">
+                    <div class="toolbar-right">
+                        <div class="search-box">
+                            <input type="text" id="responseSearch" placeholder="Rechercher..." oninput="filterResponses()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Invit&eacute;</th>
+                                <th>Email</th>
+                                <th>&Eacute;v&eacute;nement</th>
+                                <th>Pr&eacute;sence</th>
+                                <th>+1</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="responsesTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="responsesEmpty" class="empty-state hidden">
+                    <div class="icon">📬</div>
+                    <h3>Aucune r&eacute;ponse</h3>
+                    <p>Les r&eacute;ponses des invit&eacute;s appara&icirc;tront ici.</p>
+                </div>
+            </div>
+
+            <!-- Tab: R&eacute;ponses Publiques -->
+            <div id="tab-public" class="tab-content">
+                <div class="toolbar">
+                    <div class="toolbar-right">
+                        <div class="search-box">
+                            <input type="text" id="publicSearch" placeholder="Rechercher..." oninput="filterPublic()">
+                        </div>
+                        <button class="btn btn-outline" onclick="exportData('public')">
+                            Exporter CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Personnes</th>
+                                <th>&Eacute;v&eacute;nements</th>
+                                <th>Message</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="publicTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="publicEmpty" class="empty-state hidden">
+                    <div class="icon">📝</div>
+                    <h3>Aucune r&eacute;ponse publique</h3>
+                    <p>Les r&eacute;ponses du formulaire public appara&icirc;tront ici.</p>
+                </div>
             </div>
 
             <!-- Tab: Messages -->
             <div id="tab-messages" class="tab-content">
-                <table id="messagesTable">
-                    <thead>
-                        <tr>
-                            <th>Invité</th>
-                            <th>Email</th>
-                            <th>Message</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="messagesTableBody"></tbody>
-                </table>
+                <div class="toolbar">
+                    <div class="toolbar-right">
+                        <div class="search-box">
+                            <input type="text" id="messageSearch" placeholder="Rechercher..." oninput="filterMessages()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Invit&eacute;</th>
+                                <th>Email</th>
+                                <th>Message</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messagesTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="messagesEmpty" class="empty-state hidden">
+                    <div class="icon">💬</div>
+                    <h3>Aucun message</h3>
+                    <p>Les messages des invit&eacute;s appara&icirc;tront ici.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -144,153 +881,466 @@
     <!-- Modal: Add/Edit Guest -->
     <div id="guestModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Ajouter un invité</h2>
-            <form id="guestForm">
-                <div class="form-group">
-                    <label>Prénom*</label>
-                    <input type="text" id="firstName" required>
-                </div>
-                <div class="form-group">
-                    <label>Nom*</label>
-                    <input type="text" id="lastName" required>
-                </div>
-                <div class="form-group">
-                    <label>Email*</label>
-                    <input type="email" id="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Téléphone</label>
-                    <input type="tel" id="phone">
-                </div>
-                <div class="form-group">
-                    <label>Invité aux événements:</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" id="invitedMairie"> La Mairie</label>
-                        <label><input type="checkbox" id="invitedVinHonneur"> Vin d'Honneur</label>
-                        <label><input type="checkbox" id="invitedChabbat"> Le Chabbat</label>
-                        <label><input type="checkbox" id="invitedHouppa"> Houppa / Soirée</label>
+            <div class="modal-header">
+                <h2 id="modalTitle">Ajouter un invit&eacute;</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="guestForm" onsubmit="saveGuest(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Pr&eacute;nom *</label>
+                            <input type="text" id="firstName" required minlength="2">
+                        </div>
+                        <div class="form-group">
+                            <label>Nom *</label>
+                            <input type="text" id="lastName" required minlength="2">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>T&eacute;l&eacute;phone</label>
+                            <input type="tel" id="phone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Invit&eacute; aux &eacute;v&eacute;nements :</label>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="invitedMairie">
+                                <span>La Mairie</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="invitedVinHonneur">
+                                <span>Vin d'Honneur</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="invitedChabbat">
+                                <span>Le Chabbat</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="invitedHouppa">
+                                <span>Houppa / Soir&eacute;e</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn">Enregistrer</button>
-                    <button type="button" class="btn btn-danger" onclick="closeModal()">Annuler</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // State
         let password = '';
         let currentEditId = null;
+        let guestsData = [];
+        let responsesData = [];
+        let publicData = [];
+        let messagesData = [];
 
-        function login() {
+        // Utility: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Utility: Format date
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Utility: Toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Utility: Loading
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        // Utility: API call
+        async function apiCall(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'x-admin-password': password,
+                ...options.headers
+            };
+
+            const response = await fetch(url, { ...options, headers });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur serveur');
+            }
+
+            return data;
+        }
+
+        // Login
+        async function login(event) {
+            event.preventDefault();
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.classList.add('hidden');
+
             password = document.getElementById('adminPassword').value;
 
-            fetch('/api/admin/guests', {
-                headers: { 'password': password }
-            })
-            .then(res => {
-                if (res.ok) {
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('adminPanel').classList.remove('hidden');
-                    loadData();
-                } else {
-                    document.getElementById('loginError').textContent = 'Mot de passe incorrect';
-                    document.getElementById('loginError').classList.remove('hidden');
-                }
-            });
+            try {
+                showLoading();
+                await apiCall('/api/admin/guests');
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadAllData();
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Mot de passe incorrect';
+                errorDiv.classList.remove('hidden');
+                password = '';
+            } finally {
+                hideLoading();
+            }
         }
 
-        function loadData() {
-            loadStats();
-            loadGuests();
-            loadResponses();
-            loadMessages();
+        // Load all data
+        async function loadAllData() {
+            showLoading();
+            try {
+                await Promise.all([
+                    loadStats(),
+                    loadGuests(),
+                    loadResponses(),
+                    loadPublicResponses(),
+                    loadMessages()
+                ]);
+            } catch (error) {
+                showToast('Erreur lors du chargement des donn&eacute;es', 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
-        function loadStats() {
-            fetch('/api/admin/stats', {
-                headers: { 'password': password }
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('totalGuests').textContent = data.totalGuests || 0;
-                document.getElementById('emailsSent').textContent = data.emailsSent || 0;
-                document.getElementById('responsesReceived').textContent = data.responsesReceived || 0;
-                document.getElementById('messagesReceived').textContent = data.messagesReceived || 0;
-            });
+        // Load stats
+        async function loadStats() {
+            try {
+                const result = await apiCall('/api/admin/stats');
+                const stats = result.data;
+
+                document.getElementById('totalGuests').textContent = stats.guests.total;
+                document.getElementById('emailsSent').textContent = stats.guests.emailsSent;
+                document.getElementById('responsesReceived').textContent = stats.responses.totalGuests;
+                document.getElementById('publicResponses').textContent = stats.publicResponses.total;
+
+                // Sub stats
+                document.getElementById('guestsSubStats').innerHTML = `
+                    Mairie: ${stats.guests.invited.mairie} |
+                    Vin: ${stats.guests.invited.vin_honneur} |
+                    Chabbat: ${stats.guests.invited.chabbat} |
+                    Houppa: ${stats.guests.invited.houppa}
+                `;
+
+                const emailPercent = stats.guests.total > 0
+                    ? Math.round((stats.guests.emailsSent / stats.guests.total) * 100)
+                    : 0;
+                document.getElementById('emailsSubStats').innerHTML = `${emailPercent}% des invit&eacute;s`;
+
+                document.getElementById('responsesSubStats').innerHTML = `
+                    Confirm&eacute;s - Mairie: ${stats.responses.confirmed.mairie} |
+                    Vin: ${stats.responses.confirmed.vin_honneur} |
+                    Chabbat: ${stats.responses.confirmed.chabbat} |
+                    Houppa: ${stats.responses.confirmed.houppa}
+                `;
+
+                document.getElementById('publicSubStats').innerHTML = `
+                    ${stats.publicResponses.totalGuests} personnes au total
+                `;
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
         }
 
-        function loadGuests() {
-            fetch('/api/admin/guests', {
-                headers: { 'password': password }
-            })
-            .then(res => res.json())
-            .then(guests => {
-                const tbody = document.getElementById('guestsTableBody');
-                tbody.innerHTML = guests.map(g => {
-                    const events = [];
-                    if (g.invited_to_mairie) events.push('Mairie');
-                    if (g.invited_to_vin_honneur) events.push('Vin d\'Honneur');
-                    if (g.invited_to_chabbat) events.push('Chabbat');
-                    if (g.invited_to_houppa) events.push('Houppa');
-
-                    return `
-                        <tr>
-                            <td><input type="checkbox" value="${g.id}" class="guest-checkbox"></td>
-                            <td>${g.first_name} ${g.last_name}</td>
-                            <td>${g.email}</td>
-                            <td>${events.join(', ')}</td>
-                            <td>${g.email_sent ? '✓ Oui' : '✗ Non'}</td>
-                            <td>
-                                <button class="btn" style="padding: 5px 10px; margin-right: 5px;" onclick="sendEmail(${g.id})">Envoyer</button>
-                                <button class="btn" style="padding: 5px 10px; margin-right: 5px;" onclick="editGuest(${g.id})">Éditer</button>
-                                <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deleteGuest(${g.id})">Supprimer</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            });
+        // Load guests
+        async function loadGuests() {
+            try {
+                const result = await apiCall('/api/admin/guests');
+                guestsData = result.data || [];
+                renderGuests();
+                document.getElementById('guestsBadge').textContent = guestsData.length;
+            } catch (error) {
+                console.error('Error loading guests:', error);
+            }
         }
 
-        function loadResponses() {
-            fetch('/api/admin/responses', {
-                headers: { 'password': password }
-            })
-            .then(res => res.json())
-            .then(responses => {
-                const tbody = document.getElementById('responsesTableBody');
-                tbody.innerHTML = responses.map(r => `
+        // Render guests
+        function renderGuests(filter = '') {
+            const tbody = document.getElementById('guestsTableBody');
+            const emptyDiv = document.getElementById('guestsEmpty');
+
+            const filtered = filter
+                ? guestsData.filter(g =>
+                    `${g.first_name} ${g.last_name} ${g.email}`.toLowerCase().includes(filter.toLowerCase())
+                )
+                : guestsData;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+
+            emptyDiv.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(g => {
+                const events = [];
+                if (g.invited_to_mairie) events.push('Mairie');
+                if (g.invited_to_vin_honneur) events.push('Vin');
+                if (g.invited_to_chabbat) events.push('Chabbat');
+                if (g.invited_to_houppa) events.push('Houppa');
+
+                return `
                     <tr>
-                        <td>${r.first_name} ${r.last_name}</td>
-                        <td>${r.email}</td>
-                        <td>${r.event_name}</td>
-                        <td>${r.will_attend ? '✓ Oui' : '✗ Non'}</td>
-                        <td>${r.plus_one || 0}</td>
-                        <td>${new Date(r.created_at).toLocaleString('fr-FR')}</td>
+                        <td><input type="checkbox" value="${g.id}" class="guest-checkbox"></td>
+                        <td><strong>${escapeHtml(g.first_name)} ${escapeHtml(g.last_name)}</strong></td>
+                        <td>${escapeHtml(g.email)}</td>
+                        <td>${escapeHtml(g.phone) || '-'}</td>
+                        <td>
+                            <div class="event-tags">
+                                ${events.map(e => `<span class="event-tag">${e}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td>
+                            ${g.email_sent
+                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
+                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                            }
+                        </td>
+                        <td class="actions">
+                            <button class="action-btn btn btn-sm btn-primary" onclick="sendEmail(${g.id})" title="Envoyer email">
+                                📧
+                            </button>
+                            <button class="action-btn btn btn-sm btn-outline" onclick="editGuest(${g.id})" title="Modifier">
+                                ✏️
+                            </button>
+                            <button class="action-btn btn btn-sm btn-danger" onclick="deleteGuest(${g.id})" title="Supprimer">
+                                🗑️
+                            </button>
+                        </td>
                     </tr>
-                `).join('');
-            });
+                `;
+            }).join('');
         }
 
-        function loadMessages() {
-            fetch('/api/admin/messages', {
-                headers: { 'password': password }
-            })
-            .then(res => res.json())
-            .then(messages => {
-                const tbody = document.getElementById('messagesTableBody');
-                tbody.innerHTML = messages.map(m => `
+        // Filter guests
+        function filterGuests() {
+            const filter = document.getElementById('guestSearch').value;
+            renderGuests(filter);
+        }
+
+        // Load responses
+        async function loadResponses() {
+            try {
+                const result = await apiCall('/api/admin/responses');
+                responsesData = result.data || [];
+                renderResponses();
+                document.getElementById('responsesBadge').textContent = responsesData.length;
+            } catch (error) {
+                console.error('Error loading responses:', error);
+            }
+        }
+
+        // Render responses
+        function renderResponses(filter = '') {
+            const tbody = document.getElementById('responsesTableBody');
+            const emptyDiv = document.getElementById('responsesEmpty');
+
+            const filtered = filter
+                ? responsesData.filter(r =>
+                    `${r.first_name} ${r.last_name} ${r.email} ${r.event_name}`.toLowerCase().includes(filter.toLowerCase())
+                )
+                : responsesData;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+
+            emptyDiv.classList.add('hidden');
+
+            const eventNames = {
+                'mairie': 'La Mairie',
+                'vin_honneur': 'Vin d\'Honneur',
+                'chabbat': 'Le Chabbat',
+                'houppa': 'Houppa / Soir&eacute;e'
+            };
+
+            tbody.innerHTML = filtered.map(r => `
+                <tr>
+                    <td><strong>${escapeHtml(r.first_name)} ${escapeHtml(r.last_name)}</strong></td>
+                    <td>${escapeHtml(r.email)}</td>
+                    <td>${eventNames[r.event_name] || r.event_name}</td>
+                    <td>
+                        ${r.will_attend
+                            ? '<span class="badge badge-success">Oui</span>'
+                            : '<span class="badge badge-danger">Non</span>'
+                        }
+                    </td>
+                    <td>${r.plus_one || 0}</td>
+                    <td>${formatDate(r.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter responses
+        function filterResponses() {
+            const filter = document.getElementById('responseSearch').value;
+            renderResponses(filter);
+        }
+
+        // Load public responses
+        async function loadPublicResponses() {
+            try {
+                const result = await apiCall('/api/admin/public-responses');
+                publicData = result.data || [];
+                renderPublicResponses();
+                document.getElementById('publicBadge').textContent = publicData.length;
+            } catch (error) {
+                console.error('Error loading public responses:', error);
+            }
+        }
+
+        // Render public responses
+        function renderPublicResponses(filter = '') {
+            const tbody = document.getElementById('publicTableBody');
+            const emptyDiv = document.getElementById('publicEmpty');
+
+            const filtered = filter
+                ? publicData.filter(r =>
+                    `${r.name} ${r.message || ''}`.toLowerCase().includes(filter.toLowerCase())
+                )
+                : publicData;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+
+            emptyDiv.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(r => {
+                const events = [];
+                if (r.mairie) events.push('Mairie');
+                if (r.vin_honneur) events.push('Vin');
+                if (r.chabbat) events.push('Chabbat');
+                if (r.houppa) events.push('Houppa');
+
+                return `
                     <tr>
-                        <td>${m.first_name} ${m.last_name}</td>
-                        <td>${m.email}</td>
-                        <td>${m.message}</td>
-                        <td>${new Date(m.created_at).toLocaleString('fr-FR')}</td>
+                        <td><strong>${escapeHtml(r.name)}</strong></td>
+                        <td><span class="badge badge-info">${r.guests}</span></td>
+                        <td>
+                            <div class="event-tags">
+                                ${events.map(e => `<span class="event-tag">${e}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td class="message-preview" title="${escapeHtml(r.message || '')}">${escapeHtml(r.message) || '-'}</td>
+                        <td>${formatDate(r.created_at)}</td>
+                        <td class="actions">
+                            <button class="action-btn btn btn-sm btn-danger" onclick="deletePublicResponse(${r.id})" title="Supprimer">
+                                🗑️
+                            </button>
+                        </td>
                     </tr>
-                `).join('');
-            });
+                `;
+            }).join('');
         }
 
+        // Filter public
+        function filterPublic() {
+            const filter = document.getElementById('publicSearch').value;
+            renderPublicResponses(filter);
+        }
+
+        // Load messages
+        async function loadMessages() {
+            try {
+                const result = await apiCall('/api/admin/messages');
+                messagesData = result.data || [];
+                renderMessages();
+                document.getElementById('messagesBadge').textContent = messagesData.length;
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Render messages
+        function renderMessages(filter = '') {
+            const tbody = document.getElementById('messagesTableBody');
+            const emptyDiv = document.getElementById('messagesEmpty');
+
+            const filtered = filter
+                ? messagesData.filter(m =>
+                    `${m.first_name} ${m.last_name} ${m.email} ${m.message}`.toLowerCase().includes(filter.toLowerCase())
+                )
+                : messagesData;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+
+            emptyDiv.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(m => `
+                <tr>
+                    <td><strong>${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</strong></td>
+                    <td>${escapeHtml(m.email)}</td>
+                    <td class="message-full">${escapeHtml(m.message)}</td>
+                    <td>${formatDate(m.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter messages
+        function filterMessages() {
+            const filter = document.getElementById('messageSearch').value;
+            renderMessages(filter);
+        }
+
+        // Tab navigation
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -299,110 +1349,211 @@
             document.getElementById('tab-' + tabName).classList.add('active');
         }
 
-        function openAddGuestModal() {
-            currentEditId = null;
-            document.getElementById('modalTitle').textContent = 'Ajouter un invité';
-            document.getElementById('guestForm').reset();
-            document.getElementById('guestModal').style.display = 'block';
-        }
+        // Modal functions
+        function openGuestModal(guest = null) {
+            currentEditId = guest ? guest.id : null;
+            document.getElementById('modalTitle').textContent = guest ? 'Modifier l\'invit&eacute;' : 'Ajouter un invit&eacute;';
 
-        function editGuest(id) {
-            // Implement edit functionality
-            alert('Édition à implémenter');
+            if (guest) {
+                document.getElementById('firstName').value = guest.first_name || '';
+                document.getElementById('lastName').value = guest.last_name || '';
+                document.getElementById('email').value = guest.email || '';
+                document.getElementById('phone').value = guest.phone || '';
+                document.getElementById('invitedMairie').checked = guest.invited_to_mairie;
+                document.getElementById('invitedVinHonneur').checked = guest.invited_to_vin_honneur;
+                document.getElementById('invitedChabbat').checked = guest.invited_to_chabbat;
+                document.getElementById('invitedHouppa').checked = guest.invited_to_houppa;
+            } else {
+                document.getElementById('guestForm').reset();
+            }
+
+            document.getElementById('guestModal').classList.add('active');
         }
 
         function closeModal() {
-            document.getElementById('guestModal').style.display = 'none';
+            document.getElementById('guestModal').classList.remove('active');
+            currentEditId = null;
         }
 
-        document.getElementById('guestForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+        // Edit guest
+        function editGuest(id) {
+            const guest = guestsData.find(g => g.id === id);
+            if (guest) {
+                openGuestModal(guest);
+            }
+        }
+
+        // Save guest (create or update)
+        async function saveGuest(event) {
+            event.preventDefault();
 
             const data = {
-                first_name: document.getElementById('firstName').value,
-                last_name: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
                 invited_to_mairie: document.getElementById('invitedMairie').checked,
                 invited_to_vin_honneur: document.getElementById('invitedVinHonneur').checked,
                 invited_to_chabbat: document.getElementById('invitedChabbat').checked,
                 invited_to_houppa: document.getElementById('invitedHouppa').checked
             };
 
-            fetch('/api/admin/guests', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'password': password
-                },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .then(() => {
+            try {
+                showLoading();
+
+                if (currentEditId) {
+                    await apiCall(`/api/admin/guests/${currentEditId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Invit&eacute; modifi&eacute; avec succ&egrave;s', 'success');
+                } else {
+                    await apiCall('/api/admin/guests', {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Invit&eacute; ajout&eacute; avec succ&egrave;s', 'success');
+                }
+
                 closeModal();
-                loadGuests();
-                loadStats();
-            });
-        });
+                await loadGuests();
+                await loadStats();
 
-        function sendEmail(guestId) {
-            if (!confirm('Envoyer l\'invitation par email?')) return;
-
-            fetch(`/api/email/send/${guestId}`, {
-                method: 'POST',
-                headers: { 'password': password }
-            })
-            .then(res => res.json())
-            .then(() => {
-                alert('Email envoyé!');
-                loadGuests();
-                loadStats();
-            })
-            .catch(() => alert('Erreur lors de l\'envoi'));
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
-        function deleteGuest(id) {
-            if (!confirm('Supprimer cet invité?')) return;
+        // Delete guest
+        async function deleteGuest(id) {
+            if (!confirm('&Ecirc;tes-vous s&ucirc;r de vouloir supprimer cet invit&eacute; ?')) return;
 
-            fetch(`/api/admin/guests/${id}`, {
-                method: 'DELETE',
-                headers: { 'password': password }
-            })
-            .then(() => {
-                loadGuests();
-                loadStats();
-            });
+            try {
+                showLoading();
+                await apiCall(`/api/admin/guests/${id}`, { method: 'DELETE' });
+                showToast('Invit&eacute; supprim&eacute;', 'success');
+                await loadGuests();
+                await loadStats();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
+        // Delete public response
+        async function deletePublicResponse(id) {
+            if (!confirm('&Ecirc;tes-vous s&ucirc;r de vouloir supprimer cette r&eacute;ponse ?')) return;
+
+            try {
+                showLoading();
+                await apiCall(`/api/admin/public-responses/${id}`, { method: 'DELETE' });
+                showToast('R&eacute;ponse supprim&eacute;e', 'success');
+                await loadPublicResponses();
+                await loadStats();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Send email
+        async function sendEmail(guestId) {
+            if (!confirm('Envoyer l\'invitation par email ?')) return;
+
+            try {
+                showLoading();
+                await apiCall(`/api/email/send/${guestId}`, { method: 'POST' });
+                showToast('Email envoy&eacute; avec succ&egrave;s', 'success');
+                await loadGuests();
+                await loadStats();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Send bulk emails
+        async function sendBulkEmails() {
+            const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+
+            if (selected.length === 0) {
+                showToast('S&eacute;lectionnez au moins un invit&eacute;', 'warning');
+                return;
+            }
+
+            if (!confirm(`Envoyer ${selected.length} email(s) ?`)) return;
+
+            try {
+                showLoading();
+                const result = await apiCall('/api/email/send-bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ guestIds: selected })
+                });
+
+                const data = result.data;
+                showToast(
+                    `Envoi termin&eacute;: ${data.sent} r&eacute;ussis, ${data.failed} &eacute;checs, ${data.skipped} ignor&eacute;s`,
+                    data.failed > 0 ? 'warning' : 'success'
+                );
+
+                await loadGuests();
+                await loadStats();
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Toggle all checkboxes
         function toggleAllCheckboxes(source) {
             document.querySelectorAll('.guest-checkbox').forEach(cb => cb.checked = source.checked);
         }
 
-        function sendBulkEmails() {
-            const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked')).map(cb => parseInt(cb.value));
+        // Export data
+        function exportData(type) {
+            const url = `/api/admin/export?type=${type}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
 
-            if (selected.length === 0) {
-                alert('Sélectionnez au moins un invité');
-                return;
-            }
-
-            if (!confirm(`Envoyer ${selected.length} emails?`)) return;
-
-            fetch('/api/email/send-bulk', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'password': password
-                },
-                body: JSON.stringify({ guestIds: selected })
+            // Add password header via fetch
+            fetch(url, {
+                headers: { 'x-admin-password': password }
             })
-            .then(res => res.json())
-            .then(data => {
-                alert(`Envoi terminé!\nRéussis: ${data.results.success.length}\nÉchecs: ${data.results.failed.length}`);
-                loadGuests();
-                loadStats();
-            });
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = type === 'public' ? 'reponses-publiques.csv' : 'invites.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => showToast('Erreur lors de l\'export', 'error'));
         }
+
+        // Close modal on outside click
+        document.getElementById('guestModal').addEventListener('click', (e) => {
+            if (e.target.id === 'guestModal') {
+                closeModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>

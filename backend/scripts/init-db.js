@@ -54,7 +54,7 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS public_responses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      email TEXT NOT NULL,
+      guests INTEGER DEFAULT 1,
       mairie BOOLEAN DEFAULT 0,
       vin_honneur BOOLEAN DEFAULT 0,
       chabbat BOOLEAN DEFAULT 0,

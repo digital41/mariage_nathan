@@ -277,6 +277,20 @@
             color: #888;
         }
 
+        /* Animation Pulse */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .btn-pulse {
+            animation: pulse 3s ease-in-out infinite;
+        }
+
         .btn-submit-new {
             display: block;
             width: 100%;
@@ -293,11 +307,12 @@
             letter-spacing: 0.15em;
             cursor: pointer;
             transition: background 0.3s;
-            box-shadow: 0 4px 15px rgba(201, 169, 97, 0.3);
+            animation: pulse 3s ease-in-out infinite;
         }
 
         .btn-submit-new:hover {
             background: #3D2B1F;
+            animation: none;
         }
 
         .response-message {
@@ -802,7 +817,7 @@
             <div class="text-dark-brown font-montserrat fs-30 ls-5">14 Juin 2026</div>
             <img src="/assets/images/bg-decoration-2.png" class="img-fluid w-100 bg_only_mobile"/>
             <div class="text-center btn-pos-bottom pos-absolute w-100">
-                <a href="javascript:void(0);" class="btn btn-event" data-kt-start-invitation="true">VOIR LE BOARDING PASS</a>
+                <a href="javascript:void(0);" class="btn btn-event btn-pulse" data-kt-start-invitation="true">VOIR LE BOARDING PASS</a>
             </div>
         </div>
     </div>

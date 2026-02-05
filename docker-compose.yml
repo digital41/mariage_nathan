@@ -3,8 +3,6 @@ services:
     image: ghcr.io/digital41/mariage_nathan:latest
     container_name: mariage-nathan
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -18,6 +16,18 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
     volumes:
       - mariage-data:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mariage.rule=Host(`mariage.srv1014329.hstgr.cloud`)
+      - traefik.http.routers.mariage.entrypoints=websecure
+      - traefik.http.routers.mariage.tls.certresolver=myresolver
+      - traefik.http.services.mariage.loadbalancer.server.port=3000
+    networks:
+      - n8n_default
 
 volumes:
   mariage-data:
+
+networks:
+  n8n_default:
+    external: true

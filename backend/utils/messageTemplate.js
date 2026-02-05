@@ -36,7 +36,7 @@ const generateWhatsAppMessage = (guest, invitationLink) => {
   if (guest.invited_to_houppa) events.push('Houppa / Soirée');
 
   return [
-    'Bonjour ' + guest.first_name + ' ! \u{1F48D}',
+    'Bonjour ' + guest.first_name + ' ! ☺️',
     '',
     'Nous avons le plaisir de vous inviter au mariage de *Dvora & Nathan* le *14 Juin 2026* !',
     '',
@@ -47,7 +47,7 @@ const generateWhatsAppMessage = (guest, invitationLink) => {
     invitationLink,
     '',
     'Nous avons hate de partager ce moment avec vous !',
-    '_Dvora & Nathan_ \u{1F49B}'
+    '_Dvora & Nathan_ ❤️'
   ].join('\n');
 };
 

@@ -39,16 +39,60 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
+          envs: GH_TOKEN
           script: |
+            mkdir -p /opt/mariage-nathan
             cd /opt/mariage-nathan
+            echo "$GH_TOKEN" | docker login ghcr.io -u digital41 --password-stdin
+            cat > docker-compose.yml <<'EOF'
+            services:
+              mariage-nathan:
+                image: ghcr.io/digital41/mariage_nathan:latest
+                container_name: mariage-nathan
+                restart: unless-stopped
+                env_file: .env
+                volumes:
+                  - mariage-data:/app/data
+                labels:
+                  - traefik.enable=true
+                  - "traefik.http.routers.mariage.rule=Host(`mariage.srv1014329.hstgr.cloud`)"
+                  - traefik.http.routers.mariage.entrypoints=websecure
+                  - traefik.http.routers.mariage.tls.certresolver=myresolver
+                  - traefik.http.services.mariage.loadbalancer.server.port=3000
+                networks:
+                  - n8n_default
+            volumes:
+              mariage-data:
+            networks:
+              n8n_default:
+                external: true
+            EOF
+            if [ ! -f .env ]; then
+            cat > .env <<'ENVFILE'
+            NODE_ENV=production
+            PORT=3000
+            SITE_URL=https://mariage.srv1014329.hstgr.cloud
+            ADMIN_PASSWORD=changeme123
+            EMAIL_HOST=smtp.gmail.com
+            EMAIL_PORT=587
+            EMAIL_SECURE=false
+            EMAIL_USER=
+            EMAIL_PASS=
+            EMAIL_FROM=
+            ENVFILE
+            fi
             docker compose pull
             docker compose up -d
             docker image prune -f

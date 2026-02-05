@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const XLSX = require('xlsx');
 const { run, get, all } = require('../utils/database');
 const { checkAuth } = require('../middleware/auth');
-const { validateGuestMiddleware } = require('../middleware/validation');
+const { validateGuestMiddleware, sanitizeString } = require('../middleware/validation');
 const { asyncHandler, errors } = require('../middleware/errorHandler');
+
+// Multer en mémoire pour l'upload de fichiers
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Tous les endpoints admin requièrent une authentification
 router.use(checkAuth);
@@ -36,13 +41,11 @@ router.get('/guests/:id', asyncHandler(async (req, res) => {
     throw errors.notFound('Invité');
   }
 
-  // Récupérer les réponses de cet invité
   const responses = await all(
     'SELECT * FROM event_responses WHERE guest_id = ?',
     [id]
   );
 
-  // Récupérer les messages
   const messages = await all(
     'SELECT * FROM messages WHERE guest_id = ? ORDER BY created_at DESC',
     [id]
@@ -59,17 +62,36 @@ router.post('/guests', validateGuestMiddleware, asyncHandler(async (req, res) =>
   const data = req.validatedData;
   const token = uuidv4();
 
+  // Vérifier doublon par email
+  if (data.email) {
+    const existingEmail = await get('SELECT id FROM guests WHERE email = ?', [data.email]);
+    if (existingEmail) {
+      throw errors.badRequest('Un invité avec cet email existe déjà');
+    }
+  }
+
+  // Vérifier doublon par prénom+nom
+  const existingName = await get(
+    'SELECT id FROM guests WHERE LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)',
+    [data.first_name, data.last_name]
+  );
+  if (existingName) {
+    throw errors.badRequest('Un invité avec ce nom existe déjà');
+  }
+
   const result = await run(
     `INSERT INTO guests (
-      first_name, last_name, email, phone, token,
+      first_name, last_name, email, phone, token, family, country,
       invited_to_mairie, invited_to_vin_honneur, invited_to_chabbat, invited_to_houppa
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.first_name,
       data.last_name,
       data.email,
       data.phone,
       token,
+      data.family,
+      data.country,
       data.invited_to_mairie ? 1 : 0,
       data.invited_to_vin_honneur ? 1 : 0,
       data.invited_to_chabbat ? 1 : 0,
@@ -93,7 +115,6 @@ router.put('/guests/:id', validateGuestMiddleware, asyncHandler(async (req, res)
   const { id } = req.params;
   const data = req.validatedData;
 
-  // Vérifier que l'invité existe
   const existing = await get('SELECT id FROM guests WHERE id = ?', [id]);
   if (!existing) {
     throw errors.notFound('Invité');
@@ -102,6 +123,7 @@ router.put('/guests/:id', validateGuestMiddleware, asyncHandler(async (req, res)
   await run(
     `UPDATE guests SET
       first_name = ?, last_name = ?, email = ?, phone = ?,
+      family = ?, country = ?,
       invited_to_mairie = ?, invited_to_vin_honneur = ?,
       invited_to_chabbat = ?, invited_to_houppa = ?
     WHERE id = ?`,
@@ -110,6 +132,8 @@ router.put('/guests/:id', validateGuestMiddleware, asyncHandler(async (req, res)
       data.last_name,
       data.email,
       data.phone,
+      data.family,
+      data.country,
       data.invited_to_mairie ? 1 : 0,
       data.invited_to_vin_honneur ? 1 : 0,
       data.invited_to_chabbat ? 1 : 0,
@@ -140,10 +164,135 @@ router.delete('/guests/:id', asyncHandler(async (req, res) => {
   });
 }));
 
+// ============================================
+// IMPORT EXCEL / CSV
+// ============================================
+
+router.post('/import', upload.single('file'), asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw errors.badRequest('Aucun fichier fourni');
+  }
+
+  const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+
+  if (rows.length === 0) {
+    throw errors.badRequest('Le fichier est vide');
+  }
+
+  // Mapper les noms de colonnes (insensible à la casse/accents)
+  const mapColumn = (row, keys) => {
+    for (const key of keys) {
+      for (const col of Object.keys(row)) {
+        if (col.toLowerCase().replace(/[éèê]/g, 'e').replace(/[àâ]/g, 'a') === key.toLowerCase()) {
+          return row[col];
+        }
+      }
+    }
+    return '';
+  };
+
+  // Charger les emails et noms existants pour détecter les doublons
+  const existingGuests = await all('SELECT email, first_name, last_name FROM guests');
+  const existingEmails = new Set(existingGuests.map(g => (g.email || '').toLowerCase()).filter(e => e));
+  const existingNames = new Set(existingGuests.map(g => `${(g.first_name || '').toLowerCase()}|${(g.last_name || '').toLowerCase()}`));
+
+  const results = { imported: [], duplicates: [], errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const lineNum = i + 2; // +2 car ligne 1 = en-têtes
+
+    const firstName = sanitizeString(String(mapColumn(row, ['prenom', 'Prenom', 'Prénom', 'first_name', 'FirstName'])), 100);
+    const lastName = sanitizeString(String(mapColumn(row, ['nom', 'Nom', 'last_name', 'LastName'])), 100);
+    const email = String(mapColumn(row, ['email', 'Email', 'E-mail', 'e-mail'])).trim().toLowerCase();
+    const phone = sanitizeString(String(mapColumn(row, ['telephone', 'Telephone', 'Téléphone', 'phone', 'Phone', 'Tel', 'tel'])), 20);
+    const family = sanitizeString(String(mapColumn(row, ['famille', 'Famille', 'family', 'Family'])), 100);
+    const country = sanitizeString(String(mapColumn(row, ['pays', 'Pays', 'country', 'Country'])), 100) || 'France';
+
+    const mairie = mapColumn(row, ['mairie', 'Mairie']);
+    const vinHonneur = mapColumn(row, ['vin_honneur', 'Vin Honneur', 'vin honneur', 'VinHonneur']);
+    const chabbat = mapColumn(row, ['chabbat', 'Chabbat']);
+    const houppa = mapColumn(row, ['houppa', 'Houppa', 'houppa / soiree', 'Houppa / Soirée']);
+
+    // Validation
+    if (!firstName || firstName.length < 2) {
+      results.errors.push({ line: lineNum, reason: 'Prénom manquant ou trop court' });
+      continue;
+    }
+    if (!lastName || lastName.length < 2) {
+      results.errors.push({ line: lineNum, reason: 'Nom manquant ou trop court' });
+      continue;
+    }
+
+    // Vérifier doublon par email
+    if (email && existingEmails.has(email)) {
+      results.duplicates.push({ line: lineNum, name: `${firstName} ${lastName}`, reason: `Email ${email} existe déjà` });
+      continue;
+    }
+
+    // Vérifier doublon par nom
+    const nameKey = `${firstName.toLowerCase()}|${lastName.toLowerCase()}`;
+    if (existingNames.has(nameKey)) {
+      results.duplicates.push({ line: lineNum, name: `${firstName} ${lastName}`, reason: 'Nom existe déjà' });
+      continue;
+    }
+
+    const toBool = (val) => {
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'number') return val === 1;
+      const s = String(val).toLowerCase().trim();
+      return s === '1' || s === 'oui' || s === 'true' || s === 'x' || s === 'yes';
+    };
+
+    const normalizedCountry = country.toLowerCase().includes('etranger') || country.toLowerCase().includes('étranger') ? 'Etranger' : 'France';
+    const normalizedFamily = family === 'Ibgui' || family === 'Chemaoun' ? family : (family.toLowerCase().includes('ibgui') ? 'Ibgui' : (family.toLowerCase().includes('chemaoun') ? 'Chemaoun' : family));
+
+    const token = uuidv4();
+
+    try {
+      await run(
+        `INSERT INTO guests (
+          first_name, last_name, email, phone, token, family, country,
+          invited_to_mairie, invited_to_vin_honneur, invited_to_chabbat, invited_to_houppa
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          firstName, lastName, email || null, phone, token,
+          normalizedFamily, normalizedCountry,
+          toBool(mairie) ? 1 : 0,
+          toBool(vinHonneur) ? 1 : 0,
+          toBool(chabbat) ? 1 : 0,
+          toBool(houppa) ? 1 : 0
+        ]
+      );
+
+      // Ajouter aux sets pour détecter les doublons intra-fichier
+      if (email) existingEmails.add(email);
+      existingNames.add(nameKey);
+
+      results.imported.push({ line: lineNum, name: `${firstName} ${lastName}` });
+    } catch (error) {
+      results.errors.push({ line: lineNum, name: `${firstName} ${lastName}`, reason: error.message });
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Import terminé',
+    data: {
+      total: rows.length,
+      imported: results.imported.length,
+      duplicates: results.duplicates.length,
+      errors: results.errors.length,
+      details: results
+    }
+  });
+}));
+
 // GET /admin/stats - Récupérer les statistiques
 router.get('/stats', asyncHandler(async (req, res) => {
-  // Exécuter toutes les requêtes en parallèle pour de meilleures performances
-  const [guestsStats, responsesStats, messagesCount, eventStats] = await Promise.all([
+  const [guestsStats, responsesStats, messagesCount, eventStats, familyStats, countryStats] = await Promise.all([
     get(`
       SELECT
         COUNT(*) as total,
@@ -159,10 +308,11 @@ router.get('/stats', asyncHandler(async (req, res) => {
         SUM(CASE WHEN invited_to_chabbat = 1 THEN 1 ELSE 0 END) as invited_chabbat,
         SUM(CASE WHEN invited_to_houppa = 1 THEN 1 ELSE 0 END) as invited_houppa
       FROM guests
-    `)
+    `),
+    all('SELECT family, COUNT(*) as count FROM guests WHERE family IS NOT NULL AND family != \'\' GROUP BY family ORDER BY count DESC'),
+    all('SELECT country, COUNT(*) as count FROM guests GROUP BY country ORDER BY count DESC')
   ]);
 
-  // Stats des confirmations par événement
   const confirmationStats = await get(`
     SELECT
       SUM(CASE WHEN event_name = 'mairie' AND will_attend = 1 THEN 1 + plus_one ELSE 0 END) as confirmed_mairie,
@@ -172,7 +322,6 @@ router.get('/stats', asyncHandler(async (req, res) => {
     FROM event_responses
   `);
 
-  // Stats des réponses publiques
   const publicStats = await get(`
     SELECT
       COUNT(*) as total_responses,
@@ -195,7 +344,9 @@ router.get('/stats', asyncHandler(async (req, res) => {
           vin_honneur: eventStats.invited_vin_honneur || 0,
           chabbat: eventStats.invited_chabbat || 0,
           houppa: eventStats.invited_houppa || 0
-        }
+        },
+        byFamily: familyStats || [],
+        byCountry: countryStats || []
       },
       responses: {
         totalGuests: responsesStats.count || 0,
@@ -327,7 +478,6 @@ router.get('/export', asyncHandler(async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.send('\uFEFF' + csvRows.join('\n'));
   } else {
-    // Export des invités avec leurs réponses
     const guests = await all(`
       SELECT g.*,
         (SELECT GROUP_CONCAT(event_name || ':' || will_attend || ':' || plus_one, '|')
@@ -336,7 +486,7 @@ router.get('/export', asyncHandler(async (req, res) => {
       ORDER BY g.last_name, g.first_name
     `);
 
-    headers = ['ID', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Mairie', 'Vin Honneur', 'Chabbat', 'Houppa', 'Email Envoyé', 'Date Création'];
+    headers = ['ID', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Famille', 'Pays', 'Mairie', 'Vin Honneur', 'Chabbat', 'Houppa', 'Email Envoyé', 'WhatsApp Envoyé', 'SMS Envoyé', 'Date Création'];
     filename = 'invites.csv';
 
     const csvRows = [headers.join(';')];
@@ -347,11 +497,15 @@ router.get('/export', asyncHandler(async (req, res) => {
         `"${(row.last_name || '').replace(/"/g, '""')}"`,
         `"${(row.email || '').replace(/"/g, '""')}"`,
         `"${(row.phone || '').replace(/"/g, '""')}"`,
+        `"${(row.family || '').replace(/"/g, '""')}"`,
+        `"${(row.country || '').replace(/"/g, '""')}"`,
         row.invited_to_mairie ? 'Oui' : 'Non',
         row.invited_to_vin_honneur ? 'Oui' : 'Non',
         row.invited_to_chabbat ? 'Oui' : 'Non',
         row.invited_to_houppa ? 'Oui' : 'Non',
         row.email_sent ? 'Oui' : 'Non',
+        row.whatsapp_sent ? 'Oui' : 'Non',
+        row.sms_sent ? 'Oui' : 'Non',
         row.created_at
       ].join(';'));
     });

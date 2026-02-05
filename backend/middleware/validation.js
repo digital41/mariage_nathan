@@ -42,8 +42,18 @@ const validateGuest = (data) => {
     errors.push('Le nom doit contenir au moins 2 caractères');
   }
 
-  if (!data.email || !isValidEmail(data.email)) {
+  if (data.email && !isValidEmail(data.email)) {
     errors.push('Email invalide');
+  }
+
+  const validFamilies = ['Ibgui', 'Chemaoun'];
+  if (data.family && !validFamilies.includes(data.family)) {
+    errors.push('Famille invalide (Ibgui ou Chemaoun)');
+  }
+
+  const validCountries = ['France', 'Etranger'];
+  if (data.country && !validCountries.includes(data.country)) {
+    errors.push('Pays invalide (France ou Etranger)');
   }
 
   if (data.phone && !isValidPhone(data.phone)) {
@@ -56,8 +66,10 @@ const validateGuest = (data) => {
     sanitized: {
       first_name: sanitizeString(data.first_name, 100),
       last_name: sanitizeString(data.last_name, 100),
-      email: sanitizeString(data.email, 255).toLowerCase(),
+      email: data.email ? sanitizeString(data.email, 255).toLowerCase() : null,
       phone: sanitizeString(data.phone, 20),
+      family: sanitizeString(data.family, 100) || '',
+      country: data.country || 'France',
       invited_to_mairie: Boolean(data.invited_to_mairie),
       invited_to_vin_honneur: Boolean(data.invited_to_vin_honneur),
       invited_to_chabbat: Boolean(data.invited_to_chabbat),

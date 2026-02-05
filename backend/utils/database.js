@@ -64,7 +64,7 @@ const initDatabase = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
+        email TEXT DEFAULT '',
         phone TEXT,
         token TEXT UNIQUE NOT NULL,
         invited_to_mairie BOOLEAN DEFAULT 0,
@@ -116,6 +116,35 @@ const initDatabase = async () => {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migrations : ajouter les colonnes manquantes sur les tables existantes
+    const migrations = [
+      { table: 'public_responses', column: 'guests', definition: 'INTEGER DEFAULT 1' },
+      { table: 'public_responses', column: 'mairie', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'public_responses', column: 'vin_honneur', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'public_responses', column: 'chabbat', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'public_responses', column: 'houppa', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'public_responses', column: 'message', definition: 'TEXT' },
+      { table: 'guests', column: 'phone', definition: 'TEXT' },
+      { table: 'guests', column: 'email_sent', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'guests', column: 'email_sent_date', definition: 'TEXT' },
+      { table: 'guests', column: 'sms_sent', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'guests', column: 'sms_sent_date', definition: 'TEXT' },
+      { table: 'guests', column: 'whatsapp_sent', definition: 'BOOLEAN DEFAULT 0' },
+      { table: 'guests', column: 'whatsapp_sent_date', definition: 'TEXT' },
+      { table: 'guests', column: 'family', definition: 'TEXT' },
+      { table: 'guests', column: 'country', definition: 'TEXT DEFAULT \'France\'' },
+      { table: 'guests', column: 'total_guests', definition: 'INTEGER DEFAULT 1' },
+    ];
+
+    for (const migration of migrations) {
+      try {
+        await run(`ALTER TABLE ${migration.table} ADD COLUMN ${migration.column} ${migration.definition}`);
+        console.log(`Migration: ajout de ${migration.column} à ${migration.table}`);
+      } catch (err) {
+        // La colonne existe déjà - on ignore
+      }
+    }
 
     // Index pour améliorer les performances
     await run('CREATE INDEX IF NOT EXISTS idx_guests_token ON guests(token)');

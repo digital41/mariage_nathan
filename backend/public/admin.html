@@ -447,20 +447,141 @@
         }
 
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px 15px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 14px;
             transition: all 0.2s;
+            background: var(--white);
         }
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            font-size: 14px;
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .import-results {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .import-results .result-section {
+            margin-bottom: 15px;
+        }
+
+        .import-results .result-section h4 {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .import-results ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .import-results li {
+            padding: 4px 0;
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background: #fef5e0;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-area .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-area .file-name {
+            margin-top: 10px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Column selector dropdown */
+        .column-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .column-selector-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 10px 0;
+            z-index: 100;
+            min-width: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .column-selector-dropdown.open {
+            display: block;
+        }
+
+        .column-selector-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+
+        .column-selector-dropdown label:hover {
+            background: var(--light);
+        }
+
+        .column-selector-dropdown input[type="checkbox"] {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
         }
 
         .form-row {
@@ -717,6 +838,14 @@
                     <div class="number" id="publicResponses">0</div>
                     <div class="sub-stats" id="publicSubStats"></div>
                 </div>
+                <div class="stat-card">
+                    <h3>Par Famille</h3>
+                    <div class="sub-stats" id="familyStats" style="border:none;margin:0;padding:0;font-size:14px;"></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Par Pays</h3>
+                    <div class="sub-stats" id="countryStats" style="border:none;margin:0;padding:0;font-size:14px;"></div>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -742,17 +871,42 @@
                         <button class="btn btn-primary" onclick="openGuestModal()">
                             + Ajouter un invit&eacute;
                         </button>
+                        <button class="btn btn-outline" style="background:#2e7d32;color:#fff;border:none;" onclick="openImportModal()">
+                            Importer Excel/CSV
+                        </button>
                         <button class="btn btn-success" onclick="sendBulkEmails()">
                             Envoyer emails s&eacute;lectionn&eacute;s
                         </button>
+                        <button class="btn btn-outline" style="background:#25D366;color:#fff;border:none;" onclick="sendBulkWhatsApp()">
+                            WhatsApp
+                        </button>
+                        <button class="btn btn-outline" style="background:#0088cc;color:#fff;border:none;" onclick="sendBulkSMS()">
+                            SMS
+                        </button>
                     </div>
                     <div class="toolbar-right">
+                        <select id="familyFilter" class="filter-select" onchange="filterGuests()">
+                            <option value="">Toutes familles</option>
+                            <option value="Ibgui">Ibgui</option>
+                            <option value="Chemaoun">Chemaoun</option>
+                        </select>
+                        <select id="countryFilter" class="filter-select" onchange="filterGuests()">
+                            <option value="">Tous pays</option>
+                            <option value="France">France</option>
+                            <option value="Etranger">Etranger</option>
+                        </select>
                         <div class="search-box">
                             <input type="text" id="guestSearch" placeholder="Rechercher..." oninput="filterGuests()">
                         </div>
                         <button class="btn btn-outline" onclick="exportData('guests')">
                             Exporter CSV
                         </button>
+                        <div class="column-selector">
+                            <button class="btn btn-outline" onclick="toggleColumnSelector(event)">
+                                Colonnes
+                            </button>
+                            <div id="columnSelectorDropdown" class="column-selector-dropdown"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -764,8 +918,12 @@
                                 <th>Nom</th>
                                 <th>Email</th>
                                 <th>T&eacute;l&eacute;phone</th>
+                                <th>Famille</th>
+                                <th>Pays</th>
                                 <th>&Eacute;v&eacute;nements</th>
                                 <th>Email</th>
+                                <th>WhatsApp</th>
+                                <th>SMS</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -899,12 +1057,29 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Email *</label>
-                            <input type="email" id="email" required>
+                            <label>Email</label>
+                            <input type="email" id="email">
                         </div>
                         <div class="form-group">
                             <label>T&eacute;l&eacute;phone</label>
                             <input type="tel" id="phone">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Famille</label>
+                            <select id="family">
+                                <option value="">-- Aucune --</option>
+                                <option value="Ibgui">Ibgui</option>
+                                <option value="Chemaoun">Chemaoun</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Pays</label>
+                            <select id="country">
+                                <option value="France">France</option>
+                                <option value="Etranger">Etranger</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
@@ -934,6 +1109,34 @@
                     <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: Import Excel/CSV -->
+    <div id="importModal" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h2>Importer des invit&eacute;s</h2>
+                <button class="modal-close" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:15px;color:var(--gray);font-size:14px;">
+                    Importez un fichier Excel (.xlsx) ou CSV (.csv).<br>
+                    Colonnes attendues : <strong>Pr&eacute;nom, Nom, Email, T&eacute;l&eacute;phone, Famille, Pays, Mairie, Vin Honneur, Chabbat, Houppa</strong>
+                </p>
+                <div class="file-upload-area" onclick="document.getElementById('importFile').click()">
+                    <div class="icon">📁</div>
+                    <p>Cliquez pour s&eacute;lectionner un fichier</p>
+                    <p style="font-size:12px;color:var(--gray);">.xlsx ou .csv (max 5 Mo)</p>
+                    <input type="file" id="importFile" accept=".xlsx,.csv,.xls" onchange="onImportFileSelected(this)">
+                    <div id="importFileName" class="file-name" style="display:none;"></div>
+                </div>
+                <div id="importResults" class="import-results" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeImportModal()">Fermer</button>
+                <button type="button" class="btn btn-primary" id="importBtn" onclick="importGuests()" disabled>Importer</button>
+            </div>
         </div>
     </div>
 
@@ -1085,6 +1288,32 @@
                     ${stats.publicResponses.totalGuests} personnes au total
                 `;
 
+                // Family stats
+                const familyDiv = document.getElementById('familyStats');
+                if (stats.guests.byFamily && stats.guests.byFamily.length > 0) {
+                    familyDiv.innerHTML = stats.guests.byFamily.map(f =>
+                        `<div style="display:flex;justify-content:space-between;padding:4px 0;">
+                            <span>${escapeHtml(f.family || 'Non d\u00e9fini')}</span>
+                            <strong>${f.count}</strong>
+                        </div>`
+                    ).join('');
+                } else {
+                    familyDiv.innerHTML = '<span style="color:var(--gray)">Aucune donn\u00e9e</span>';
+                }
+
+                // Country stats
+                const countryDiv = document.getElementById('countryStats');
+                if (stats.guests.byCountry && stats.guests.byCountry.length > 0) {
+                    countryDiv.innerHTML = stats.guests.byCountry.map(c =>
+                        `<div style="display:flex;justify-content:space-between;padding:4px 0;">
+                            <span>${escapeHtml(c.country || 'Non d\u00e9fini')}</span>
+                            <strong>${c.count}</strong>
+                        </div>`
+                    ).join('');
+                } else {
+                    countryDiv.innerHTML = '<span style="color:var(--gray)">Aucune donn\u00e9e</span>';
+                }
+
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
@@ -1103,15 +1332,20 @@
         }
 
         // Render guests
-        function renderGuests(filter = '') {
+        function renderGuests() {
             const tbody = document.getElementById('guestsTableBody');
             const emptyDiv = document.getElementById('guestsEmpty');
 
-            const filtered = filter
-                ? guestsData.filter(g =>
-                    `${g.first_name} ${g.last_name} ${g.email}`.toLowerCase().includes(filter.toLowerCase())
-                )
-                : guestsData;
+            const textFilter = (document.getElementById('guestSearch').value || '').toLowerCase();
+            const familyFilter = document.getElementById('familyFilter').value;
+            const countryFilter = document.getElementById('countryFilter').value;
+
+            const filtered = guestsData.filter(g => {
+                if (textFilter && !`${g.first_name} ${g.last_name} ${g.email} ${g.phone || ''}`.toLowerCase().includes(textFilter)) return false;
+                if (familyFilter && g.family !== familyFilter) return false;
+                if (countryFilter && g.country !== countryFilter) return false;
+                return true;
+            });
 
             if (filtered.length === 0) {
                 tbody.innerHTML = '';
@@ -1132,8 +1366,10 @@
                     <tr>
                         <td><input type="checkbox" value="${g.id}" class="guest-checkbox"></td>
                         <td><strong>${escapeHtml(g.first_name)} ${escapeHtml(g.last_name)}</strong></td>
-                        <td>${escapeHtml(g.email)}</td>
+                        <td>${escapeHtml(g.email) || '-'}</td>
                         <td>${escapeHtml(g.phone) || '-'}</td>
+                        <td>${g.family ? `<span class="badge badge-primary">${escapeHtml(g.family)}</span>` : '-'}</td>
+                        <td>${g.country ? `<span class="badge ${g.country === 'France' ? 'badge-info' : 'badge-warning'}">${escapeHtml(g.country)}</span>` : '-'}</td>
                         <td>
                             <div class="event-tags">
                                 ${events.map(e => `<span class="event-tag">${e}</span>`).join('')}
@@ -1145,26 +1381,45 @@
                                 : '<span class="badge badge-warning">Non envoy&eacute;</span>'
                             }
                         </td>
+                        <td>
+                            ${g.whatsapp_sent
+                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
+                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                            }
+                        </td>
+                        <td>
+                            ${g.sms_sent
+                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
+                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                            }
+                        </td>
                         <td class="actions">
                             <button class="action-btn btn btn-sm btn-primary" onclick="sendEmail(${g.id})" title="Envoyer email">
-                                📧
+                                \u{1F4E7}
+                            </button>
+                            <button class="action-btn btn btn-sm" style="background:#25D366;color:#fff;" onclick="openWhatsApp(${g.id})" title="Envoyer WhatsApp" ${!g.phone ? 'disabled style="opacity:0.4;background:#25D366;color:#fff;"' : ''}>
+                                \u{1F4AC}
+                            </button>
+                            <button class="action-btn btn btn-sm" style="background:#0088cc;color:#fff;" onclick="openSMS(${g.id})" title="Envoyer SMS" ${!g.phone ? 'disabled style="opacity:0.4;background:#0088cc;color:#fff;"' : ''}>
+                                \u{1F4F1}
                             </button>
                             <button class="action-btn btn btn-sm btn-outline" onclick="editGuest(${g.id})" title="Modifier">
-                                ✏️
+                                \u270F\uFE0F
                             </button>
                             <button class="action-btn btn btn-sm btn-danger" onclick="deleteGuest(${g.id})" title="Supprimer">
-                                🗑️
+                                \u{1F5D1}\uFE0F
                             </button>
                         </td>
                     </tr>
                 `;
             }).join('');
+
+            applyColumnVisibility();
         }
 
         // Filter guests
         function filterGuests() {
-            const filter = document.getElementById('guestSearch').value;
-            renderGuests(filter);
+            renderGuests();
         }
 
         // Load responses
@@ -1352,19 +1607,22 @@
         // Modal functions
         function openGuestModal(guest = null) {
             currentEditId = guest ? guest.id : null;
-            document.getElementById('modalTitle').textContent = guest ? 'Modifier l\'invit&eacute;' : 'Ajouter un invit&eacute;';
+            document.getElementById('modalTitle').textContent = guest ? 'Modifier l\'invit\u00e9' : 'Ajouter un invit\u00e9';
 
             if (guest) {
                 document.getElementById('firstName').value = guest.first_name || '';
                 document.getElementById('lastName').value = guest.last_name || '';
                 document.getElementById('email').value = guest.email || '';
                 document.getElementById('phone').value = guest.phone || '';
+                document.getElementById('family').value = guest.family || '';
+                document.getElementById('country').value = guest.country || 'France';
                 document.getElementById('invitedMairie').checked = guest.invited_to_mairie;
                 document.getElementById('invitedVinHonneur').checked = guest.invited_to_vin_honneur;
                 document.getElementById('invitedChabbat').checked = guest.invited_to_chabbat;
                 document.getElementById('invitedHouppa').checked = guest.invited_to_houppa;
             } else {
                 document.getElementById('guestForm').reset();
+                document.getElementById('country').value = 'France';
             }
 
             document.getElementById('guestModal').classList.add('active');
@@ -1392,6 +1650,8 @@
                 last_name: document.getElementById('lastName').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
+                family: document.getElementById('family').value,
+                country: document.getElementById('country').value,
                 invited_to_mairie: document.getElementById('invitedMairie').checked,
                 invited_to_vin_honneur: document.getElementById('invitedVinHonneur').checked,
                 invited_to_chabbat: document.getElementById('invitedChabbat').checked,
@@ -1541,6 +1801,307 @@
             .catch(error => showToast('Erreur lors de l\'export', 'error'));
         }
 
+        // ============================================
+        // WHATSAPP & SMS
+        // ============================================
+
+        // Ouvrir WhatsApp pour un invité
+        async function openWhatsApp(guestId) {
+            try {
+                const result = await apiCall(`/api/messaging/whatsapp/link/${guestId}`);
+                window.open(result.data.whatsappLink, '_blank');
+                showToast('Lien WhatsApp ouvert', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Ouvrir SMS depuis le téléphone de l'admin (lien sms: direct)
+        async function openSMS(guestId) {
+            try {
+                const result = await apiCall(`/api/messaging/sms/link/${guestId}`);
+                window.open(result.data.smsLink, '_blank');
+                showToast('SMS ouvert depuis votre t\u00e9l\u00e9phone', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Envoi WhatsApp groupé (ouvre les liens un par un)
+        async function sendBulkWhatsApp() {
+            const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+
+            if (selected.length === 0) {
+                showToast('S\u00e9lectionnez au moins un invit\u00e9', 'warning');
+                return;
+            }
+
+            if (!confirm(`Ouvrir WhatsApp pour ${selected.length} invit\u00e9(s) ?\nChaque lien s'ouvrira dans un nouvel onglet.`)) return;
+
+            try {
+                showLoading();
+                const result = await apiCall('/api/messaging/whatsapp/links-bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ guestIds: selected })
+                });
+
+                const { links, skipped } = result.data;
+
+                if (skipped.length > 0) {
+                    showToast(`${skipped.length} invit\u00e9(s) sans t\u00e9l\u00e9phone ignor\u00e9(s)`, 'warning');
+                }
+
+                // Ouvrir chaque lien avec un délai
+                for (let i = 0; i < links.length; i++) {
+                    setTimeout(() => {
+                        window.open(links[i].whatsappLink, '_blank');
+                    }, i * 800);
+                }
+
+                showToast(`${links.length} lien(s) WhatsApp ouvert(s)`, 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Envoi SMS groupé (ouvre les liens sms: un par un)
+        async function sendBulkSMS() {
+            const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+
+            if (selected.length === 0) {
+                showToast('S\u00e9lectionnez au moins un invit\u00e9', 'warning');
+                return;
+            }
+
+            if (!confirm(`Ouvrir SMS pour ${selected.length} invit\u00e9(s) ?\nChaque SMS s'ouvrira un par un.`)) return;
+
+            try {
+                showLoading();
+                const result = await apiCall('/api/messaging/sms/links-bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ guestIds: selected })
+                });
+
+                const { links, skipped } = result.data;
+
+                if (skipped.length > 0) {
+                    showToast(`${skipped.length} invit\u00e9(s) sans t\u00e9l\u00e9phone ignor\u00e9(s)`, 'warning');
+                }
+
+                for (let i = 0; i < links.length; i++) {
+                    setTimeout(() => {
+                        window.open(links[i].smsLink, '_blank');
+                    }, i * 1500);
+                }
+
+                showToast(`${links.length} SMS pr\u00e9par\u00e9(s) depuis votre t\u00e9l\u00e9phone`, 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ============================================
+        // COLUMN VISIBILITY
+        // ============================================
+
+        const allColumns = [
+            { key: 'select', label: 'S\u00e9lection', index: 0, default: true },
+            { key: 'name', label: 'Nom', index: 1, default: true },
+            { key: 'email', label: 'Email', index: 2, default: true },
+            { key: 'phone', label: 'T\u00e9l\u00e9phone', index: 3, default: true },
+            { key: 'family', label: 'Famille', index: 4, default: true },
+            { key: 'country', label: 'Pays', index: 5, default: true },
+            { key: 'events', label: '\u00c9v\u00e9nements', index: 6, default: true },
+            { key: 'emailStatus', label: 'Statut Email', index: 7, default: true },
+            { key: 'whatsapp', label: 'Statut WhatsApp', index: 8, default: false },
+            { key: 'sms', label: 'Statut SMS', index: 9, default: false },
+            { key: 'actions', label: 'Actions', index: 10, default: true }
+        ];
+
+        function getVisibleColumns() {
+            const saved = localStorage.getItem('visibleColumns');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
+            }
+            return allColumns.filter(c => c.default).map(c => c.key);
+        }
+
+        function saveVisibleColumns(visible) {
+            localStorage.setItem('visibleColumns', JSON.stringify(visible));
+        }
+
+        function applyColumnVisibility() {
+            const visible = getVisibleColumns();
+            const table = document.querySelector('#tab-guests table');
+            if (!table) return;
+
+            allColumns.forEach(col => {
+                const isVisible = visible.includes(col.key);
+                // Header
+                const th = table.querySelector(`thead tr th:nth-child(${col.index + 1})`);
+                if (th) th.style.display = isVisible ? '' : 'none';
+                // Data rows
+                table.querySelectorAll(`tbody tr`).forEach(tr => {
+                    const td = tr.querySelector(`td:nth-child(${col.index + 1})`);
+                    if (td) td.style.display = isVisible ? '' : 'none';
+                });
+            });
+        }
+
+        function buildColumnSelector() {
+            const dropdown = document.getElementById('columnSelectorDropdown');
+            const visible = getVisibleColumns();
+
+            dropdown.innerHTML = allColumns.map(col => `
+                <label>
+                    <input type="checkbox" value="${col.key}"
+                        ${visible.includes(col.key) ? 'checked' : ''}
+                        onchange="toggleColumn('${col.key}', this.checked)">
+                    ${escapeHtml(col.label)}
+                </label>
+            `).join('');
+        }
+
+        function toggleColumnSelector(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('columnSelectorDropdown');
+            const isOpen = dropdown.classList.contains('open');
+
+            if (!isOpen) {
+                buildColumnSelector();
+            }
+            dropdown.classList.toggle('open');
+        }
+
+        function toggleColumn(key, visible) {
+            const current = getVisibleColumns();
+            let updated;
+            if (visible) {
+                updated = [...current, key];
+            } else {
+                updated = current.filter(k => k !== key);
+            }
+            saveVisibleColumns(updated);
+            applyColumnVisibility();
+        }
+
+        // Close dropdown on click outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('columnSelectorDropdown');
+            if (dropdown && !e.target.closest('.column-selector')) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // ============================================
+        // IMPORT EXCEL/CSV
+        // ============================================
+
+        function openImportModal() {
+            document.getElementById('importFile').value = '';
+            document.getElementById('importFileName').style.display = 'none';
+            document.getElementById('importResults').style.display = 'none';
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('active');
+        }
+
+        function onImportFileSelected(input) {
+            const file = input.files[0];
+            if (file) {
+                document.getElementById('importFileName').textContent = file.name;
+                document.getElementById('importFileName').style.display = 'block';
+                document.getElementById('importBtn').disabled = false;
+                document.getElementById('importResults').style.display = 'none';
+            }
+        }
+
+        async function importGuests() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showToast('Veuillez s\u00e9lectionner un fichier', 'warning');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/import', {
+                    method: 'POST',
+                    headers: {
+                        'x-admin-password': password
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erreur lors de l\'import');
+                }
+
+                const data = result.data;
+                const resultsDiv = document.getElementById('importResults');
+                resultsDiv.style.display = 'block';
+
+                let html = `
+                    <div style="padding:15px;background:var(--light);border-radius:8px;margin-bottom:15px;">
+                        <strong>R\u00e9sultat :</strong> ${data.imported} import\u00e9(s) / ${data.total} lignes
+                        ${data.duplicates > 0 ? ` | <span style="color:var(--warning)">${data.duplicates} doublon(s)</span>` : ''}
+                        ${data.errors > 0 ? ` | <span style="color:var(--danger)">${data.errors} erreur(s)</span>` : ''}
+                    </div>
+                `;
+
+                if (data.details.imported.length > 0) {
+                    html += `<div class="result-section">
+                        <h4 style="color:var(--success)">Import\u00e9s (${data.details.imported.length})</h4>
+                        <ul>${data.details.imported.map(i => `<li>Ligne ${i.line}: ${escapeHtml(i.name)}</li>`).join('')}</ul>
+                    </div>`;
+                }
+
+                if (data.details.duplicates.length > 0) {
+                    html += `<div class="result-section">
+                        <h4 style="color:#856404">Doublons ignor\u00e9s (${data.details.duplicates.length})</h4>
+                        <ul>${data.details.duplicates.map(d => `<li>Ligne ${d.line}: ${escapeHtml(d.name)} - ${escapeHtml(d.reason)}</li>`).join('')}</ul>
+                    </div>`;
+                }
+
+                if (data.details.errors.length > 0) {
+                    html += `<div class="result-section">
+                        <h4 style="color:var(--danger)">Erreurs (${data.details.errors.length})</h4>
+                        <ul>${data.details.errors.map(e => `<li>Ligne ${e.line}: ${escapeHtml(e.reason)}</li>`).join('')}</ul>
+                    </div>`;
+                }
+
+                resultsDiv.innerHTML = html;
+                document.getElementById('importBtn').disabled = true;
+
+                if (data.imported > 0) {
+                    showToast(`${data.imported} invit\u00e9(s) import\u00e9(s) avec succ\u00e8s`, 'success');
+                    await loadGuests();
+                    await loadStats();
+                }
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
         // Close modal on outside click
         document.getElementById('guestModal').addEventListener('click', (e) => {
             if (e.target.id === 'guestModal') {
@@ -1548,10 +2109,17 @@
             }
         });
 
+        document.getElementById('importModal').addEventListener('click', (e) => {
+            if (e.target.id === 'importModal') {
+                closeImportModal();
+            }
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeModal();
+                closeImportModal();
             }
         });
     </script>

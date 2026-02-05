@@ -28,8 +28,7 @@ const checkAuth = (req, res, next) => {
 };
 
 // Rate limiting simple en mémoire
-const rateLimitStore = new Map();
-
+// Chaque appel à rateLimit() crée sa propre Map isolée
 const rateLimit = (options = {}) => {
   const {
     windowMs = 60 * 1000,  // 1 minute par défaut
@@ -37,26 +36,29 @@ const rateLimit = (options = {}) => {
     message = 'Trop de requêtes, veuillez réessayer plus tard'
   } = options;
 
+  // Store isolé par instance de rate limiter
+  const store = new Map();
+
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
     const now = Date.now();
 
     // Nettoyer les anciennes entrées
-    for (const [key, data] of rateLimitStore.entries()) {
+    for (const [key, data] of store.entries()) {
       if (now - data.startTime > windowMs) {
-        rateLimitStore.delete(key);
+        store.delete(key);
       }
     }
 
-    const clientData = rateLimitStore.get(ip);
+    const clientData = store.get(ip);
 
     if (!clientData) {
-      rateLimitStore.set(ip, { count: 1, startTime: now });
+      store.set(ip, { count: 1, startTime: now });
       return next();
     }
 
     if (now - clientData.startTime > windowMs) {
-      rateLimitStore.set(ip, { count: 1, startTime: now });
+      store.set(ip, { count: 1, startTime: now });
       return next();
     }
 

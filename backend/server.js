@@ -11,10 +11,14 @@ const { validatePublicResponseMiddleware } = require('./middleware/validation');
 // Import des routes
 const adminRoutes = require('./routes/admin');
 const guestRoutes = require('./routes/guests');
-const emailRoutes = require('./routes/email');
+const messagingRoutes = require('./routes/messaging');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuration EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // ============================================
 // MIDDLEWARE GLOBAUX
@@ -90,6 +94,39 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Page d'invitation personnalisée
+app.get('/invitation/:token', asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  // Validation du format du token (UUID v4)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(token)) {
+    return res.status(400).send('Lien d\'invitation invalide');
+  }
+
+  const guest = await get('SELECT * FROM guests WHERE token = ?', [token]);
+
+  if (!guest) {
+    return res.status(404).send('Invitation non trouvée');
+  }
+
+  // Charger les réponses existantes
+  const existingResponses = await all(
+    'SELECT event_name, will_attend, plus_one FROM event_responses WHERE guest_id = ?',
+    [guest.id]
+  );
+
+  const responses = {};
+  existingResponses.forEach(r => {
+    responses[r.event_name] = {
+      willAttend: Boolean(r.will_attend),
+      plusOne: r.plus_one || 0
+    };
+  });
+
+  res.render('invitation', { guest, responses, hasResponded: existingResponses.length > 0 });
+}));
+
 // Route de vérification du mot de passe admin (avec rate limiting spécifique)
 app.post('/api/auth/login', loginRateLimit, asyncHandler(async (req, res) => {
   const { password } = req.body;
@@ -124,8 +161,9 @@ app.use('/api/admin', adminRoutes);
 // Routes invités (publiques avec token)
 app.use('/api/guests', guestRoutes);
 
-// Routes email (protégées par authentification)
-app.use('/api/email', emailRoutes);
+// Routes messaging : email + WhatsApp + SMS (protégées par authentification)
+app.use('/api/messaging', messagingRoutes);
+app.use('/api/email', messagingRoutes); // Alias pour compatibilité
 
 // ============================================
 // ROUTES PUBLIQUES
@@ -222,10 +260,10 @@ const startServer = async () => {
       console.log('\n========================================');
       console.log('   Serveur Mariage Dvora & Nathan');
       console.log('========================================');
-      console.log(`Mode:  ${process.env.NODE_ENV || 'development'}`);
-      console.log(`Site:  http://localhost:${PORT}`);
-      console.log(`Admin: http://localhost:${PORT}/admin`);
-      console.log(`API:   http://localhost:${PORT}/api`);
+      console.log(`Mode:     ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Site:     http://localhost:${PORT}`);
+      console.log(`Admin:    http://localhost:${PORT}/admin`);
+      console.log(`API:      http://localhost:${PORT}/api`);
       console.log('========================================\n');
     });
 

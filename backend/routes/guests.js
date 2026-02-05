@@ -57,7 +57,7 @@ router.get('/:token', asyncHandler(async (req, res) => {
 // POST /:token/response - Enregistrer la réponse d'un invité
 router.post('/:token/response', asyncHandler(async (req, res) => {
   const { token } = req.params;
-  const { events, message } = req.body;
+  const { events, totalGuests, message } = req.body;
 
   // Validation du format du token
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -108,6 +108,14 @@ router.post('/:token/response', asyncHandler(async (req, res) => {
       `INSERT OR REPLACE INTO event_responses (guest_id, event_name, will_attend, plus_one, created_at)
        VALUES (?, ?, ?, ?, datetime('now'))`,
       [response.guestId, response.eventName, response.willAttend ? 1 : 0, response.plusOne]
+    );
+  }
+
+  // Enregistrer le nombre total de personnes
+  if (totalGuests && Number.isInteger(totalGuests) && totalGuests >= 1 && totalGuests <= 20) {
+    await run(
+      'UPDATE guests SET total_guests = ? WHERE id = ?',
+      [totalGuests, guest.id]
     );
   }
 

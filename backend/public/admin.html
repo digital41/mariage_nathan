@@ -746,6 +746,57 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .header {
+                padding: 15px 10px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .header p {
+                font-size: 12px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-card .number {
+                font-size: 24px;
+            }
+
+            .stat-card h3 {
+                font-size: 11px;
+            }
+
+            .tabs {
+                gap: 0;
+            }
+
+            .tab {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .tab-badge {
+                font-size: 10px;
+                padding: 1px 6px;
+            }
+
+            .tab-content {
+                padding: 15px 10px;
+            }
+
             .form-row {
                 grid-template-columns: 1fr;
             }
@@ -759,12 +810,93 @@
                 align-items: stretch;
             }
 
+            .toolbar-left {
+                flex-direction: column;
+            }
+
+            .toolbar-left .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
             .toolbar-right {
                 margin-left: 0;
+                flex-direction: column;
             }
 
             .search-box input {
                 width: 100%;
+            }
+
+            .filter-select {
+                width: 100%;
+            }
+
+            /* Table responsive */
+            .table-wrapper {
+                margin: 0 -10px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .event-tags {
+                flex-direction: column;
+                gap: 3px;
+            }
+
+            /* Modal plein écran sur mobile */
+            .modal-content {
+                width: 100%;
+                max-width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .modal-header {
+                padding: 15px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .modal-footer {
+                padding: 10px 15px;
+            }
+
+            /* Login */
+            .login-container {
+                margin: 50px 15px;
+                padding: 25px;
+            }
+
+            /* Toast */
+            .toast-container {
+                left: 10px;
+                right: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card .sub-stats {
+                font-size: 11px;
+            }
+
+            .btn {
+                padding: 8px 14px;
+                font-size: 13px;
             }
         }
 
@@ -819,22 +951,22 @@
             <!-- Statistics -->
             <div class="stats">
                 <div class="stat-card">
-                    <h3>Total Invit&eacute;s</h3>
+                    <h3>Total Invités</h3>
                     <div class="number" id="totalGuests">0</div>
                     <div class="sub-stats" id="guestsSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>Emails Envoy&eacute;s</h3>
+                    <h3>Emails Envoyés</h3>
                     <div class="number" id="emailsSent">0</div>
                     <div class="sub-stats" id="emailsSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>R&eacute;ponses Re&ccedil;ues</h3>
+                    <h3>Réponses Reçues</h3>
                     <div class="number" id="responsesReceived">0</div>
                     <div class="sub-stats" id="responsesSubStats"></div>
                 </div>
                 <div class="stat-card">
-                    <h3>R&eacute;ponses Publiques</h3>
+                    <h3>Réponses Publiques</h3>
                     <div class="number" id="publicResponses">0</div>
                     <div class="sub-stats" id="publicSubStats"></div>
                 </div>
@@ -851,31 +983,31 @@
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab active" onclick="showTab('guests')">
-                    Invit&eacute;s <span class="tab-badge" id="guestsBadge">0</span>
+                    Invités <span class="tab-badge" id="guestsBadge">0</span>
                 </button>
                 <button class="tab" onclick="showTab('responses')">
-                    R&eacute;ponses <span class="tab-badge" id="responsesBadge">0</span>
+                    Réponses <span class="tab-badge" id="responsesBadge">0</span>
                 </button>
                 <button class="tab" onclick="showTab('public')">
-                    R&eacute;ponses Publiques <span class="tab-badge" id="publicBadge">0</span>
+                    Réponses Publiques <span class="tab-badge" id="publicBadge">0</span>
                 </button>
                 <button class="tab" onclick="showTab('messages')">
                     Messages <span class="tab-badge" id="messagesBadge">0</span>
                 </button>
             </div>
 
-            <!-- Tab: Invit&eacute;s -->
+            <!-- Tab: Invités -->
             <div id="tab-guests" class="tab-content active">
                 <div class="toolbar">
                     <div class="toolbar-left">
                         <button class="btn btn-primary" onclick="openGuestModal()">
-                            + Ajouter un invit&eacute;
+                            + Ajouter un invité
                         </button>
                         <button class="btn btn-outline" style="background:#2e7d32;color:#fff;border:none;" onclick="openImportModal()">
                             Importer Excel/CSV
                         </button>
                         <button class="btn btn-success" onclick="sendBulkEmails()">
-                            Envoyer emails s&eacute;lectionn&eacute;s
+                            Envoyer emails sélectionnés
                         </button>
                         <button class="btn btn-outline" style="background:#25D366;color:#fff;border:none;" onclick="sendBulkWhatsApp()">
                             WhatsApp
@@ -917,10 +1049,10 @@
                                 <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
                                 <th>Nom</th>
                                 <th>Email</th>
-                                <th>T&eacute;l&eacute;phone</th>
+                                <th>Téléphone</th>
                                 <th>Famille</th>
                                 <th>Pays</th>
-                                <th>&Eacute;v&eacute;nements</th>
+                                <th>Événements</th>
                                 <th>Email</th>
                                 <th>WhatsApp</th>
                                 <th>SMS</th>
@@ -932,12 +1064,12 @@
                 </div>
                 <div id="guestsEmpty" class="empty-state hidden">
                     <div class="icon">📋</div>
-                    <h3>Aucun invit&eacute;</h3>
-                    <p>Commencez par ajouter des invit&eacute;s &agrave; votre liste.</p>
+                    <h3>Aucun invité</h3>
+                    <p>Commencez par ajouter des invités à votre liste.</p>
                 </div>
             </div>
 
-            <!-- Tab: R&eacute;ponses -->
+            <!-- Tab: Réponses -->
             <div id="tab-responses" class="tab-content">
                 <div class="toolbar">
                     <div class="toolbar-right">
@@ -951,10 +1083,10 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Invit&eacute;</th>
+                                <th>Invité</th>
                                 <th>Email</th>
-                                <th>&Eacute;v&eacute;nement</th>
-                                <th>Pr&eacute;sence</th>
+                                <th>Événement</th>
+                                <th>Présence</th>
                                 <th>+1</th>
                                 <th>Date</th>
                             </tr>
@@ -964,12 +1096,12 @@
                 </div>
                 <div id="responsesEmpty" class="empty-state hidden">
                     <div class="icon">📬</div>
-                    <h3>Aucune r&eacute;ponse</h3>
-                    <p>Les r&eacute;ponses des invit&eacute;s appara&icirc;tront ici.</p>
+                    <h3>Aucune réponse</h3>
+                    <p>Les réponses des invités apparaîtront ici.</p>
                 </div>
             </div>
 
-            <!-- Tab: R&eacute;ponses Publiques -->
+            <!-- Tab: Réponses Publiques -->
             <div id="tab-public" class="tab-content">
                 <div class="toolbar">
                     <div class="toolbar-right">
@@ -988,7 +1120,7 @@
                             <tr>
                                 <th>Nom</th>
                                 <th>Personnes</th>
-                                <th>&Eacute;v&eacute;nements</th>
+                                <th>Événements</th>
                                 <th>Message</th>
                                 <th>Date</th>
                                 <th>Actions</th>
@@ -999,8 +1131,8 @@
                 </div>
                 <div id="publicEmpty" class="empty-state hidden">
                     <div class="icon">📝</div>
-                    <h3>Aucune r&eacute;ponse publique</h3>
-                    <p>Les r&eacute;ponses du formulaire public appara&icirc;tront ici.</p>
+                    <h3>Aucune réponse publique</h3>
+                    <p>Les réponses du formulaire public apparaîtront ici.</p>
                 </div>
             </div>
 
@@ -1018,7 +1150,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Invit&eacute;</th>
+                                <th>Invité</th>
                                 <th>Email</th>
                                 <th>Message</th>
                                 <th>Date</th>
@@ -1030,7 +1162,7 @@
                 <div id="messagesEmpty" class="empty-state hidden">
                     <div class="icon">💬</div>
                     <h3>Aucun message</h3>
-                    <p>Les messages des invit&eacute;s appara&icirc;tront ici.</p>
+                    <p>Les messages des invités apparaîtront ici.</p>
                 </div>
             </div>
         </div>
@@ -1040,14 +1172,14 @@
     <div id="guestModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Ajouter un invit&eacute;</h2>
+                <h2 id="modalTitle">Ajouter un invité</h2>
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <form id="guestForm" onsubmit="saveGuest(event)">
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Pr&eacute;nom *</label>
+                            <label>Prénom *</label>
                             <input type="text" id="firstName" required minlength="2">
                         </div>
                         <div class="form-group">
@@ -1061,7 +1193,7 @@
                             <input type="email" id="email">
                         </div>
                         <div class="form-group">
-                            <label>T&eacute;l&eacute;phone</label>
+                            <label>Téléphone</label>
                             <input type="tel" id="phone">
                         </div>
                     </div>
@@ -1083,7 +1215,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Invit&eacute; aux &eacute;v&eacute;nements :</label>
+                        <label>Invité aux événements :</label>
                         <div class="checkbox-group">
                             <label>
                                 <input type="checkbox" id="invitedMairie">
@@ -1099,7 +1231,7 @@
                             </label>
                             <label>
                                 <input type="checkbox" id="invitedHouppa">
-                                <span>Houppa / Soir&eacute;e</span>
+                                <span>Houppa / Soirée</span>
                             </label>
                         </div>
                     </div>
@@ -1116,17 +1248,17 @@
     <div id="importModal" class="modal">
         <div class="modal-content" style="max-width:700px;">
             <div class="modal-header">
-                <h2>Importer des invit&eacute;s</h2>
+                <h2>Importer des invités</h2>
                 <button class="modal-close" onclick="closeImportModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <p style="margin-bottom:15px;color:var(--gray);font-size:14px;">
                     Importez un fichier Excel (.xlsx) ou CSV (.csv).<br>
-                    Colonnes attendues : <strong>Pr&eacute;nom, Nom, Email, T&eacute;l&eacute;phone, Famille, Pays, Mairie, Vin Honneur, Chabbat, Houppa</strong>
+                    Colonnes attendues : <strong>Prénom, Nom, Email, Téléphone, Famille, Pays, Mairie, Vin Honneur, Chabbat, Houppa</strong>
                 </p>
                 <div class="file-upload-area" onclick="document.getElementById('importFile').click()">
                     <div class="icon">📁</div>
-                    <p>Cliquez pour s&eacute;lectionner un fichier</p>
+                    <p>Cliquez pour sélectionner un fichier</p>
                     <p style="font-size:12px;color:var(--gray);">.xlsx ou .csv (max 5 Mo)</p>
                     <input type="file" id="importFile" accept=".xlsx,.csv,.xls" onchange="onImportFileSelected(this)">
                     <div id="importFileName" class="file-name" style="display:none;"></div>
@@ -1247,7 +1379,7 @@
                     loadMessages()
                 ]);
             } catch (error) {
-                showToast('Erreur lors du chargement des donn&eacute;es', 'error');
+                showToast('Erreur lors du chargement des données', 'error');
             } finally {
                 hideLoading();
             }
@@ -1275,10 +1407,10 @@
                 const emailPercent = stats.guests.total > 0
                     ? Math.round((stats.guests.emailsSent / stats.guests.total) * 100)
                     : 0;
-                document.getElementById('emailsSubStats').innerHTML = `${emailPercent}% des invit&eacute;s`;
+                document.getElementById('emailsSubStats').innerHTML = `${emailPercent}% des invités`;
 
                 document.getElementById('responsesSubStats').innerHTML = `
-                    Confirm&eacute;s - Mairie: ${stats.responses.confirmed.mairie} |
+                    Confirmés - Mairie: ${stats.responses.confirmed.mairie} |
                     Vin: ${stats.responses.confirmed.vin_honneur} |
                     Chabbat: ${stats.responses.confirmed.chabbat} |
                     Houppa: ${stats.responses.confirmed.houppa}
@@ -1377,20 +1509,20 @@
                         </td>
                         <td>
                             ${g.email_sent
-                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
-                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                                ? '<span class="badge badge-success">Envoyé</span>'
+                                : '<span class="badge badge-warning">Non envoyé</span>'
                             }
                         </td>
                         <td>
                             ${g.whatsapp_sent
-                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
-                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                                ? '<span class="badge badge-success">Envoyé</span>'
+                                : '<span class="badge badge-warning">Non envoyé</span>'
                             }
                         </td>
                         <td>
                             ${g.sms_sent
-                                ? '<span class="badge badge-success">Envoy&eacute;</span>'
-                                : '<span class="badge badge-warning">Non envoy&eacute;</span>'
+                                ? '<span class="badge badge-success">Envoyé</span>'
+                                : '<span class="badge badge-warning">Non envoyé</span>'
                             }
                         </td>
                         <td class="actions">
@@ -1457,7 +1589,7 @@
                 'mairie': 'La Mairie',
                 'vin_honneur': 'Vin d\'Honneur',
                 'chabbat': 'Le Chabbat',
-                'houppa': 'Houppa / Soir&eacute;e'
+                'houppa': 'Houppa / Soirée'
             };
 
             tbody.innerHTML = filtered.map(r => `
@@ -1666,13 +1798,13 @@
                         method: 'PUT',
                         body: JSON.stringify(data)
                     });
-                    showToast('Invit&eacute; modifi&eacute; avec succ&egrave;s', 'success');
+                    showToast('Invité modifié avec succès', 'success');
                 } else {
                     await apiCall('/api/admin/guests', {
                         method: 'POST',
                         body: JSON.stringify(data)
                     });
-                    showToast('Invit&eacute; ajout&eacute; avec succ&egrave;s', 'success');
+                    showToast('Invité ajouté avec succès', 'success');
                 }
 
                 closeModal();
@@ -1688,12 +1820,12 @@
 
         // Delete guest
         async function deleteGuest(id) {
-            if (!confirm('&Ecirc;tes-vous s&ucirc;r de vouloir supprimer cet invit&eacute; ?')) return;
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet invité ?')) return;
 
             try {
                 showLoading();
                 await apiCall(`/api/admin/guests/${id}`, { method: 'DELETE' });
-                showToast('Invit&eacute; supprim&eacute;', 'success');
+                showToast('Invité supprimé', 'success');
                 await loadGuests();
                 await loadStats();
             } catch (error) {
@@ -1705,12 +1837,12 @@
 
         // Delete public response
         async function deletePublicResponse(id) {
-            if (!confirm('&Ecirc;tes-vous s&ucirc;r de vouloir supprimer cette r&eacute;ponse ?')) return;
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette réponse ?')) return;
 
             try {
                 showLoading();
                 await apiCall(`/api/admin/public-responses/${id}`, { method: 'DELETE' });
-                showToast('R&eacute;ponse supprim&eacute;e', 'success');
+                showToast('Réponse supprimée', 'success');
                 await loadPublicResponses();
                 await loadStats();
             } catch (error) {
@@ -1727,7 +1859,7 @@
             try {
                 showLoading();
                 await apiCall(`/api/email/send/${guestId}`, { method: 'POST' });
-                showToast('Email envoy&eacute; avec succ&egrave;s', 'success');
+                showToast('Email envoyé avec succès', 'success');
                 await loadGuests();
                 await loadStats();
             } catch (error) {
@@ -1743,7 +1875,7 @@
                 .map(cb => parseInt(cb.value));
 
             if (selected.length === 0) {
-                showToast('S&eacute;lectionnez au moins un invit&eacute;', 'warning');
+                showToast('Sélectionnez au moins un invité', 'warning');
                 return;
             }
 
@@ -1758,7 +1890,7 @@
 
                 const data = result.data;
                 showToast(
-                    `Envoi termin&eacute;: ${data.sent} r&eacute;ussis, ${data.failed} &eacute;checs, ${data.skipped} ignor&eacute;s`,
+                    `Envoi terminé: ${data.sent} réussis, ${data.failed} échecs, ${data.skipped} ignorés`,
                     data.failed > 0 ? 'warning' : 'success'
                 );
 

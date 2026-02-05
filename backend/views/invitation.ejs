@@ -1233,6 +1233,11 @@
                 </div>
                 <% } %>
 
+                <div class="form-group-new" style="margin-bottom: 25px;">
+                    <label for="name">Nom & Prénom</label>
+                    <input type="text" id="name" name="name" value="<%= guest.first_name %> <%= guest.last_name %>" readonly style="background: #f0f0f0; color: #888; cursor: not-allowed;">
+                </div>
+
                 <div class="guests-selector-wrapper" style="margin-bottom: 30px;">
                     <label class="guests-label">Nombre de personnes</label>
                     <div class="guests-selector">
@@ -1290,28 +1295,6 @@
                     </label>
                     <% } %>
 
-                    <% if (guest.invited_to_chabbat) { %>
-                    <label class="event-checkbox <%= responses.chabbat && responses.chabbat.willAttend ? 'checked' : '' %>">
-                        <input type="checkbox" name="chabbat" value="1" <%= responses.chabbat && responses.chabbat.willAttend ? 'checked' : '' %>>
-                        <span class="checkbox-custom">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </span>
-                        <div class="event-info">
-                            <h4>Le Chabbat</h4>
-                            <span>19-20 Juin 2026</span>
-                            <div class="plus-one-wrapper <%= responses.chabbat && responses.chabbat.willAttend ? 'visible' : '' %>" data-event="chabbat" onclick="event.stopPropagation()">
-                                <span class="plus-one-label">Accompagnants :</span>
-                                <div class="plus-one-selector">
-                                    <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', -1)">-</button>
-                                    <span class="plus-one-value" id="plusone-chabbat-display"><%= responses.chabbat ? responses.chabbat.plusOne : 0 %></span>
-                                    <input type="hidden" name="chabbat_plusone" id="plusone-chabbat" value="<%= responses.chabbat ? responses.chabbat.plusOne : 0 %>">
-                                    <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', 1)">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-                    <% } %>
-
                     <% if (guest.invited_to_houppa) { %>
                     <label class="event-checkbox <%= responses.houppa && responses.houppa.willAttend ? 'checked' : '' %>">
                         <input type="checkbox" name="houppa" value="1" <%= responses.houppa && responses.houppa.willAttend ? 'checked' : '' %>>
@@ -1328,6 +1311,28 @@
                                     <span class="plus-one-value" id="plusone-houppa-display"><%= responses.houppa ? responses.houppa.plusOne : 0 %></span>
                                     <input type="hidden" name="houppa_plusone" id="plusone-houppa" value="<%= responses.houppa ? responses.houppa.plusOne : 0 %>">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('houppa', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    <% } %>
+
+                    <% if (guest.invited_to_chabbat) { %>
+                    <label class="event-checkbox <%= responses.chabbat && responses.chabbat.willAttend ? 'checked' : '' %>">
+                        <input type="checkbox" name="chabbat" value="1" <%= responses.chabbat && responses.chabbat.willAttend ? 'checked' : '' %>>
+                        <span class="checkbox-custom">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                        <div class="event-info">
+                            <h4>Le Chabbat</h4>
+                            <span>19-20 Juin 2026</span>
+                            <div class="plus-one-wrapper <%= responses.chabbat && responses.chabbat.willAttend ? 'visible' : '' %>" data-event="chabbat" onclick="event.stopPropagation()">
+                                <span class="plus-one-label">Accompagnants :</span>
+                                <div class="plus-one-selector">
+                                    <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', -1)">-</button>
+                                    <span class="plus-one-value" id="plusone-chabbat-display"><%= responses.chabbat ? responses.chabbat.plusOne : 0 %></span>
+                                    <input type="hidden" name="chabbat_plusone" id="plusone-chabbat" value="<%= responses.chabbat ? responses.chabbat.plusOne : 0 %>">
+                                    <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', 1)">+</button>
                                 </div>
                             </div>
                         </div>

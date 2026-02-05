@@ -69,7 +69,7 @@ jobs:
                   - traefik.enable=true
                   - "traefik.http.routers.mariage.rule=Host(`mariage.srv1014329.hstgr.cloud`)"
                   - traefik.http.routers.mariage.entrypoints=websecure
-                  - traefik.http.routers.mariage.tls.certresolver=myresolver
+                  - traefik.http.routers.mariage.tls.certresolver=mytlschallenge
                   - traefik.http.services.mariage.loadbalancer.server.port=3000
                 networks:
                   - n8n_default

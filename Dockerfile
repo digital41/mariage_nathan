@@ -2,23 +2,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copier les fichiers package
-COPY backend/package*.json ./
+# Copier et installer les dependances
+COPY backend/package*.json ./backend/
+RUN cd backend && npm ci --production
 
-# Installer les dependances
-RUN npm ci --production
-
-# Copier le code backend
-COPY backend/ ./
-
-# Copier les fichiers statiques du frontend
+# Copier le code
+COPY backend/ ./backend/
 COPY public/ ./public/
 
-# Creer les dossiers pour les volumes
-RUN mkdir -p logs data
+# Creer les dossiers necessaires
+RUN mkdir -p backend/logs /data
 
-# Exposer le port
+# Copier l'entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 3000
 
-# Demarrer l'application
-CMD ["node", "server.js"]
+WORKDIR /app/backend
+ENTRYPOINT ["/entrypoint.sh"]

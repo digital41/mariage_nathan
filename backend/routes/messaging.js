@@ -109,9 +109,10 @@ router.post('/send/:guestId', emailRateLimit, asyncHandler(async (req, res) => {
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: guest.email,
-    subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
+    subject: '💍 Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
     html: generateInvitationEmail(guest, invitationLink),
-    text: generateInvitationEmailText(guest, invitationLink)
+    text: generateInvitationEmailText(guest, invitationLink),
+    encoding: 'utf-8'
   };
 
   try {
@@ -178,9 +179,10 @@ router.post('/send-bulk', asyncHandler(async (req, res) => {
       await getTransporter().sendMail({
         from: process.env.EMAIL_FROM,
         to: guest.email,
-        subject: 'Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
+        subject: '💍 Invitation au Mariage de Dvora & Nathan - 14 Juin 2026',
         html: generateInvitationEmail(guest, invitationLink),
-        text: generateInvitationEmailText(guest, invitationLink)
+        text: generateInvitationEmailText(guest, invitationLink),
+        encoding: 'utf-8'
       });
 
       await run(

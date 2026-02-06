@@ -1,8 +1,89 @@
 const express = require('express');
 const router = express.Router();
+const nodemailer = require('nodemailer');
 const { run, get, all } = require('../utils/database');
 const { asyncHandler, errors } = require('../middleware/errorHandler');
 const { sanitizeString } = require('../middleware/validation');
+
+// Configuration email pour les notifications
+const getNotificationTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+};
+
+// Envoyer une notification par email
+const sendNotificationEmail = async (guest, eventResponses, totalGuests, message) => {
+  try {
+    const transporter = getNotificationTransporter();
+
+    // Formater les réponses aux événements
+    const eventLabels = {
+      mairie: 'La Mairie',
+      vin_honneur: 'Vin d\'Honneur / Henné',
+      houppa: 'Houppa / Soirée',
+      chabbat: 'Le Chabbat'
+    };
+
+    let eventsHtml = '';
+    for (const response of eventResponses) {
+      const status = response.willAttend ? '✅ Présent' : '❌ Absent';
+      const plusOne = response.willAttend && response.plusOne > 0 ? ` (+${response.plusOne} accompagnant${response.plusOne > 1 ? 's' : ''})` : '';
+      eventsHtml += `<li><strong>${eventLabels[response.eventName] || response.eventName}</strong>: ${status}${plusOne}</li>`;
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: 'ibguinathan@gmail.com',
+      subject: `🎊 Nouvelle réponse de ${guest.first_name} ${guest.last_name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #C9A961; border-bottom: 2px solid #C9A961; padding-bottom: 10px;">
+            Nouvelle réponse au formulaire
+          </h2>
+
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Invité</h3>
+            <p><strong>Nom:</strong> ${guest.first_name} ${guest.last_name}</p>
+            <p><strong>Email:</strong> ${guest.email || 'Non renseigné'}</p>
+            <p><strong>Téléphone:</strong> ${guest.phone || 'Non renseigné'}</p>
+            <p><strong>Nombre de personnes:</strong> ${totalGuests || 1}</p>
+          </div>
+
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Réponses aux événements</h3>
+            <ul style="list-style: none; padding: 0;">
+              ${eventsHtml}
+            </ul>
+          </div>
+
+          ${message ? `
+          <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #C9A961;">
+            <h3 style="margin-top: 0; color: #333;">💬 Message</h3>
+            <p style="font-style: italic;">"${message}"</p>
+          </div>
+          ` : ''}
+
+          <p style="color: #888; font-size: 12px; margin-top: 30px;">
+            Réponse reçue le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Notification envoyée pour ${guest.first_name} ${guest.last_name}`);
+  } catch (error) {
+    console.error('Erreur envoi notification:', error.message);
+    // Ne pas bloquer la réponse si l'email échoue
+  }
+};
 
 // GET /:token - Récupérer un invité par son token unique
 router.get('/:token', asyncHandler(async (req, res) => {
@@ -120,13 +201,17 @@ router.post('/:token/response', asyncHandler(async (req, res) => {
   }
 
   // Enregistrer le message si fourni
+  let sanitizedMessage = '';
   if (message && typeof message === 'string' && message.trim()) {
-    const sanitizedMessage = sanitizeString(message, 2000);
+    sanitizedMessage = sanitizeString(message, 2000);
     await run(
       'INSERT INTO messages (guest_id, message, created_at) VALUES (?, ?, datetime(\'now\'))',
       [guest.id, sanitizedMessage]
     );
   }
+
+  // Envoyer une notification par email (en arrière-plan)
+  sendNotificationEmail(guest, eventResponses, totalGuests, sanitizedMessage);
 
   res.json({
     success: true,

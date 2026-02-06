@@ -1,12 +1,84 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const { initDatabase, run, get, all } = require('./utils/database');
 const { rateLimit, loginRateLimit } = require('./middleware/auth');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 const { validatePublicResponseMiddleware } = require('./middleware/validation');
+
+// Fonction pour envoyer une notification email pour les réponses publiques
+const sendPublicResponseNotification = async (data) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const eventLabels = {
+      mairie: 'La Mairie',
+      vin_honneur: 'Vin d\'Honneur / Henné',
+      houppa: 'Houppa / Soirée',
+      chabbat: 'Le Chabbat'
+    };
+
+    let eventsHtml = '';
+    if (data.mairie) eventsHtml += `<li>✅ ${eventLabels.mairie}</li>`;
+    if (data.vin_honneur) eventsHtml += `<li>✅ ${eventLabels.vin_honneur}</li>`;
+    if (data.houppa) eventsHtml += `<li>✅ ${eventLabels.houppa}</li>`;
+    if (data.chabbat) eventsHtml += `<li>✅ ${eventLabels.chabbat}</li>`;
+    if (!eventsHtml) eventsHtml = '<li>Aucun événement sélectionné</li>';
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: 'ibguinathan@gmail.com',
+      subject: `🎊 Nouvelle réponse publique de ${data.name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #C9A961; border-bottom: 2px solid #C9A961; padding-bottom: 10px;">
+            Nouvelle réponse (formulaire public)
+          </h2>
+
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Informations</h3>
+            <p><strong>Nom:</strong> ${data.name}</p>
+            <p><strong>Nombre de personnes:</strong> ${data.guests}</p>
+          </div>
+
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Événements confirmés</h3>
+            <ul style="list-style: none; padding: 0;">
+              ${eventsHtml}
+            </ul>
+          </div>
+
+          ${data.message ? `
+          <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #C9A961;">
+            <h3 style="margin-top: 0; color: #333;">💬 Message</h3>
+            <p style="font-style: italic;">"${data.message}"</p>
+          </div>
+          ` : ''}
+
+          <p style="color: #888; font-size: 12px; margin-top: 30px;">
+            Réponse reçue le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Notification publique envoyée pour ${data.name}`);
+  } catch (error) {
+    console.error('Erreur envoi notification publique:', error.message);
+  }
+};
 
 // Import des routes
 const adminRoutes = require('./routes/admin');
@@ -189,6 +261,9 @@ app.post('/api/public/response', validatePublicResponseMiddleware, asyncHandler(
 
   console.log(`Nouvelle réponse publique: ${data.name} (${data.guests} personnes)`);
 
+  // Envoyer notification par email (en arrière-plan)
+  sendPublicResponseNotification(data);
+
   res.status(201).json({
     success: true,
     message: 'Merci ! Votre réponse a été enregistrée avec succès',
@@ -215,6 +290,9 @@ app.post('/api/guests/public-response', validatePublicResponseMiddleware, asyncH
       data.message
     ]
   );
+
+  // Envoyer notification par email (en arrière-plan)
+  sendPublicResponseNotification(data);
 
   res.json({
     success: true,

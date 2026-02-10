@@ -1272,6 +1272,23 @@
         </div>
     </div>
 
+    <!-- Modal file d'attente WhatsApp/SMS -->
+    <div id="sendQueueModal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2 id="sendQueueTitle">Envoi WhatsApp</h2>
+                <button class="modal-close" onclick="closeSendQueue()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="sendQueueProgress" style="margin-bottom:15px;color:var(--gray);font-size:14px;"></p>
+                <div id="sendQueueList" style="max-height:400px;overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeSendQueue()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // State
         let password = '';
@@ -1959,17 +1976,33 @@
             }
         }
 
-        // Envoi WhatsApp groupé (ouvre les liens un par un)
+        // File d'attente d'envoi
+        function closeSendQueue() {
+            document.getElementById('sendQueueModal').style.display = 'none';
+        }
+
+        function markQueueItemSent(index, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Envoye';
+            btn.style.background = '#ccc';
+            btn.style.color = '#666';
+            const row = btn.closest('div[data-queue-item]');
+            if (row) row.style.opacity = '0.5';
+            // Mettre a jour le compteur
+            const total = document.querySelectorAll('[data-queue-item]').length;
+            const sent = document.querySelectorAll('[data-queue-item] button:disabled').length;
+            document.getElementById('sendQueueProgress').textContent = sent + ' / ' + total + ' envoye(s)';
+        }
+
+        // Envoi WhatsApp groupe
         async function sendBulkWhatsApp() {
             const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked'))
                 .map(cb => parseInt(cb.value));
 
             if (selected.length === 0) {
-                showToast('S\u00e9lectionnez au moins un invit\u00e9', 'warning');
+                showToast('Selectionnez au moins un invite', 'warning');
                 return;
             }
-
-            if (!confirm(`Ouvrir WhatsApp pour ${selected.length} invit\u00e9(s) ?\nChaque lien s'ouvrira dans un nouvel onglet.`)) return;
 
             try {
                 showLoading();
@@ -1979,43 +2012,43 @@
                 });
 
                 const { links, skipped } = result.data;
+                hideLoading();
 
-                if (skipped.length > 0) {
-                    showToast(`${skipped.length} invit\u00e9(s) sans t\u00e9l\u00e9phone ignor\u00e9(s)`, 'warning');
+                if (links.length === 0) {
+                    showToast('Aucun invite avec numero de telephone', 'warning');
+                    return;
                 }
 
-                // Ouvrir chaque lien avec un délai
-                for (let i = 0; i < links.length; i++) {
-                    setTimeout(() => {
-                        const a = document.createElement('a');
-                        a.href = links[i].whatsappLink;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    }, i * 800);
-                }
+                // Afficher le modal avec la liste
+                document.getElementById('sendQueueTitle').textContent = 'Envoi WhatsApp (' + links.length + ' invites)';
+                document.getElementById('sendQueueProgress').textContent = '0 / ' + links.length + ' envoye(s)' + (skipped.length > 0 ? ' - ' + skipped.length + ' ignore(s) sans telephone' : '');
 
-                showToast(`${links.length} lien(s) WhatsApp ouvert(s)`, 'success');
+                let listHtml = '';
+                links.forEach(function(link, i) {
+                    listHtml += '<div data-queue-item style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;">'
+                        + '<span style="font-weight:500;">' + link.name + '</span>'
+                        + '<button onclick="window.location.href=\'' + link.whatsappLink.replace(/'/g, "\\'") + '\'; markQueueItemSent(' + i + ', this);" '
+                        + 'style="background:#25D366;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px;">Envoyer</button>'
+                        + '</div>';
+                });
+                document.getElementById('sendQueueList').innerHTML = listHtml;
+                document.getElementById('sendQueueModal').style.display = 'flex';
+
             } catch (error) {
                 showToast(error.message, 'error');
-            } finally {
                 hideLoading();
             }
         }
 
-        // Envoi SMS groupé (ouvre les liens sms: un par un)
+        // Envoi SMS groupe
         async function sendBulkSMS() {
             const selected = Array.from(document.querySelectorAll('.guest-checkbox:checked'))
                 .map(cb => parseInt(cb.value));
 
             if (selected.length === 0) {
-                showToast('S\u00e9lectionnez au moins un invit\u00e9', 'warning');
+                showToast('Selectionnez au moins un invite', 'warning');
                 return;
             }
-
-            if (!confirm(`Ouvrir SMS pour ${selected.length} invit\u00e9(s) ?\nChaque SMS s'ouvrira un par un.`)) return;
 
             try {
                 showLoading();
@@ -2025,25 +2058,29 @@
                 });
 
                 const { links, skipped } = result.data;
+                hideLoading();
 
-                if (skipped.length > 0) {
-                    showToast(`${skipped.length} invit\u00e9(s) sans t\u00e9l\u00e9phone ignor\u00e9(s)`, 'warning');
+                if (links.length === 0) {
+                    showToast('Aucun invite avec numero de telephone', 'warning');
+                    return;
                 }
 
-                for (let i = 0; i < links.length; i++) {
-                    setTimeout(() => {
-                        const a = document.createElement('a');
-                        a.href = links[i].smsLink;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    }, i * 1500);
-                }
+                document.getElementById('sendQueueTitle').textContent = 'Envoi SMS (' + links.length + ' invites)';
+                document.getElementById('sendQueueProgress').textContent = '0 / ' + links.length + ' envoye(s)' + (skipped.length > 0 ? ' - ' + skipped.length + ' ignore(s) sans telephone' : '');
 
-                showToast(`${links.length} SMS pr\u00e9par\u00e9(s) depuis votre t\u00e9l\u00e9phone`, 'success');
+                let listHtml = '';
+                links.forEach(function(link, i) {
+                    listHtml += '<div data-queue-item style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;">'
+                        + '<span style="font-weight:500;">' + link.name + '</span>'
+                        + '<button onclick="window.location.href=\'' + link.smsLink.replace(/'/g, "\\'") + '\'; markQueueItemSent(' + i + ', this);" '
+                        + 'style="background:#0088cc;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px;">Envoyer</button>'
+                        + '</div>';
+                });
+                document.getElementById('sendQueueList').innerHTML = listHtml;
+                document.getElementById('sendQueueModal').style.display = 'flex';
+
             } catch (error) {
                 showToast(error.message, 'error');
-            } finally {
                 hideLoading();
             }
         }

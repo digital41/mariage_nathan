@@ -1941,7 +1941,13 @@
         async function openWhatsApp(guestId) {
             try {
                 const result = await apiCall(`/api/messaging/whatsapp/link/${guestId}`);
-                window.open(result.data.whatsappLink, '_blank');
+                const link = document.createElement('a');
+                link.href = result.data.whatsappLink;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 showToast('Lien WhatsApp ouvert', 'success');
             } catch (error) {
                 showToast(error.message, 'error');
@@ -1952,8 +1958,8 @@
         async function openSMS(guestId) {
             try {
                 const result = await apiCall(`/api/messaging/sms/link/${guestId}`);
-                window.open(result.data.smsLink, '_blank');
-                showToast('SMS ouvert depuis votre t\u00e9l\u00e9phone', 'success');
+                window.location.href = result.data.smsLink;
+                showToast('SMS ouvert', 'success');
             } catch (error) {
                 showToast(error.message, 'error');
             }
@@ -1987,7 +1993,13 @@
                 // Ouvrir chaque lien avec un délai
                 for (let i = 0; i < links.length; i++) {
                     setTimeout(() => {
-                        window.open(links[i].whatsappLink, '_blank');
+                        const a = document.createElement('a');
+                        a.href = links[i].whatsappLink;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
                     }, i * 800);
                 }
 
@@ -2026,7 +2038,11 @@
 
                 for (let i = 0; i < links.length; i++) {
                     setTimeout(() => {
-                        window.open(links[i].smsLink, '_blank');
+                        const a = document.createElement('a');
+                        a.href = links[i].smsLink;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
                     }, i * 1500);
                 }
 

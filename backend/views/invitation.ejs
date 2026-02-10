@@ -1270,11 +1270,11 @@
                             <h4>La Mairie</h4>
                             <span>Mercredi 27 Mai 2026 - 15h00</span>
                             <div class="plus-one-wrapper <%= responses.mairie && responses.mairie.willAttend ? 'visible' : '' %>" data-event="mairie" onclick="event.stopPropagation()">
-                                <span class="plus-one-label">Accompagnants :</span>
+                                <span class="plus-one-label">Nombre de personnes :</span>
                                 <div class="plus-one-selector">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('mairie', -1)">-</button>
-                                    <span class="plus-one-value" id="plusone-mairie-display"><%= responses.mairie ? responses.mairie.plusOne : 0 %></span>
-                                    <input type="hidden" name="mairie_plusone" id="plusone-mairie" value="<%= responses.mairie ? responses.mairie.plusOne : 0 %>">
+                                    <span class="plus-one-value" id="plusone-mairie-display"><%= responses.mairie && responses.mairie.willAttend ? responses.mairie.plusOne : (guest.total_guests || 1) %></span>
+                                    <input type="hidden" name="mairie_plusone" id="plusone-mairie" value="<%= responses.mairie && responses.mairie.willAttend ? responses.mairie.plusOne : (guest.total_guests || 1) %>">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('mairie', 1)">+</button>
                                 </div>
                             </div>
@@ -1292,11 +1292,11 @@
                             <h4>Vin d'Honneur / Henné</h4>
                             <span>Mercredi 27 Mai 2026 - 17h30</span>
                             <div class="plus-one-wrapper <%= responses.vin_honneur && responses.vin_honneur.willAttend ? 'visible' : '' %>" data-event="vin_honneur" onclick="event.stopPropagation()">
-                                <span class="plus-one-label">Accompagnants :</span>
+                                <span class="plus-one-label">Nombre de personnes :</span>
                                 <div class="plus-one-selector">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('vin_honneur', -1)">-</button>
-                                    <span class="plus-one-value" id="plusone-vin_honneur-display"><%= responses.vin_honneur ? responses.vin_honneur.plusOne : 0 %></span>
-                                    <input type="hidden" name="vin_honneur_plusone" id="plusone-vin_honneur" value="<%= responses.vin_honneur ? responses.vin_honneur.plusOne : 0 %>">
+                                    <span class="plus-one-value" id="plusone-vin_honneur-display"><%= responses.vin_honneur && responses.vin_honneur.willAttend ? responses.vin_honneur.plusOne : (guest.total_guests || 1) %></span>
+                                    <input type="hidden" name="vin_honneur_plusone" id="plusone-vin_honneur" value="<%= responses.vin_honneur && responses.vin_honneur.willAttend ? responses.vin_honneur.plusOne : (guest.total_guests || 1) %>">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('vin_honneur', 1)">+</button>
                                 </div>
                             </div>
@@ -1314,11 +1314,11 @@
                             <h4>Houppa / Soirée</h4>
                             <span>Dimanche 14 Juin 2026 - 17h30</span>
                             <div class="plus-one-wrapper <%= responses.houppa && responses.houppa.willAttend ? 'visible' : '' %>" data-event="houppa" onclick="event.stopPropagation()">
-                                <span class="plus-one-label">Accompagnants :</span>
+                                <span class="plus-one-label">Nombre de personnes :</span>
                                 <div class="plus-one-selector">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('houppa', -1)">-</button>
-                                    <span class="plus-one-value" id="plusone-houppa-display"><%= responses.houppa ? responses.houppa.plusOne : 0 %></span>
-                                    <input type="hidden" name="houppa_plusone" id="plusone-houppa" value="<%= responses.houppa ? responses.houppa.plusOne : 0 %>">
+                                    <span class="plus-one-value" id="plusone-houppa-display"><%= responses.houppa && responses.houppa.willAttend ? responses.houppa.plusOne : (guest.total_guests || 1) %></span>
+                                    <input type="hidden" name="houppa_plusone" id="plusone-houppa" value="<%= responses.houppa && responses.houppa.willAttend ? responses.houppa.plusOne : (guest.total_guests || 1) %>">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('houppa', 1)">+</button>
                                 </div>
                             </div>
@@ -1336,11 +1336,11 @@
                             <h4>Le Chabbat</h4>
                             <span>19-20 Juin 2026</span>
                             <div class="plus-one-wrapper <%= responses.chabbat && responses.chabbat.willAttend ? 'visible' : '' %>" data-event="chabbat" onclick="event.stopPropagation()">
-                                <span class="plus-one-label">Accompagnants :</span>
+                                <span class="plus-one-label">Nombre de personnes :</span>
                                 <div class="plus-one-selector">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', -1)">-</button>
-                                    <span class="plus-one-value" id="plusone-chabbat-display"><%= responses.chabbat ? responses.chabbat.plusOne : 0 %></span>
-                                    <input type="hidden" name="chabbat_plusone" id="plusone-chabbat" value="<%= responses.chabbat ? responses.chabbat.plusOne : 0 %>">
+                                    <span class="plus-one-value" id="plusone-chabbat-display"><%= responses.chabbat && responses.chabbat.willAttend ? responses.chabbat.plusOne : (guest.total_guests || 1) %></span>
+                                    <input type="hidden" name="chabbat_plusone" id="plusone-chabbat" value="<%= responses.chabbat && responses.chabbat.willAttend ? responses.chabbat.plusOne : (guest.total_guests || 1) %>">
                                     <button type="button" class="plus-one-btn" onclick="changePlusOne('chabbat', 1)">+</button>
                                 </div>
                             </div>
@@ -1412,9 +1412,23 @@ function changeGuests(delta) {
     if (value > 20) value = 20;
     input.value = value;
     display.textContent = value;
+
+    // Propager la valeur globale à tous les événements cochés
+    const eventNames = ['mairie', 'vin_honneur', 'chabbat', 'houppa'];
+    eventNames.forEach(name => {
+        const cb = document.querySelector('input[name="' + name + '"]');
+        if (cb && cb.checked) {
+            const eventInput = document.getElementById('plusone-' + name);
+            const eventDisplay = document.getElementById('plusone-' + name + '-display');
+            if (eventInput && eventDisplay) {
+                eventInput.value = value;
+                eventDisplay.textContent = value;
+            }
+        }
+    });
 }
 
-// Checkbox toggle + plus-one visibility
+// Checkbox toggle + per-event people count visibility
 document.querySelectorAll('.event-checkbox input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', function() {
         const label = this.closest('.event-checkbox');
@@ -1422,12 +1436,20 @@ document.querySelectorAll('.event-checkbox input[type="checkbox"]').forEach(cb =
 
         if (this.checked) {
             label.classList.add('checked');
-            if (plusOneWrapper) plusOneWrapper.classList.add('visible');
+            if (plusOneWrapper) {
+                plusOneWrapper.classList.add('visible');
+                // Initialiser au nombre global de personnes
+                const globalValue = parseInt(document.getElementById('guests').value) || 1;
+                const eventName = plusOneWrapper.dataset.event;
+                const input = document.getElementById('plusone-' + eventName);
+                const display = document.getElementById('plusone-' + eventName + '-display');
+                if (input) input.value = globalValue;
+                if (display) display.textContent = globalValue;
+            }
         } else {
             label.classList.remove('checked');
             if (plusOneWrapper) {
                 plusOneWrapper.classList.remove('visible');
-                // Reset plus one
                 const eventName = plusOneWrapper.dataset.event;
                 const input = document.getElementById('plusone-' + eventName);
                 const display = document.getElementById('plusone-' + eventName + '-display');
@@ -1438,15 +1460,16 @@ document.querySelectorAll('.event-checkbox input[type="checkbox"]').forEach(cb =
     });
 });
 
-// Plus One Controls
+// Nombre de personnes par événement
 function changePlusOne(eventName, delta) {
     const input = document.getElementById('plusone-' + eventName);
     const display = document.getElementById('plusone-' + eventName + '-display');
     if (!input || !display) return;
 
+    const globalValue = parseInt(document.getElementById('guests').value) || 1;
     let value = parseInt(input.value) + delta;
-    if (value < 0) value = 0;
-    if (value > 10) value = 10;
+    if (value < 1) value = 1;
+    if (value > globalValue) value = globalValue;
     input.value = value;
     display.textContent = value;
 }

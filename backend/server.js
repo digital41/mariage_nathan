@@ -192,7 +192,7 @@ app.get('/invitation/:token', asyncHandler(async (req, res) => {
   existingResponses.forEach(r => {
     responses[r.event_name] = {
       willAttend: Boolean(r.will_attend),
-      plusOne: r.plus_one || 0
+      plusOne: r.will_attend ? (r.plus_one || 1) : 0
     };
   });
 

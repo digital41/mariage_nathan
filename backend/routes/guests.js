@@ -34,8 +34,8 @@ const sendNotificationEmail = async (guest, eventResponses, totalGuests, message
     let eventsHtml = '';
     for (const response of eventResponses) {
       const status = response.willAttend ? '✅ Présent' : '❌ Absent';
-      const plusOne = response.willAttend && response.plusOne > 0 ? ` (+${response.plusOne} accompagnant${response.plusOne > 1 ? 's' : ''})` : '';
-      eventsHtml += `<li><strong>${eventLabels[response.eventName] || response.eventName}</strong>: ${status}${plusOne}</li>`;
+      const peopleInfo = response.willAttend && response.plusOne > 0 ? ` (${response.plusOne} personne${response.plusOne > 1 ? 's' : ''})` : '';
+      eventsHtml += `<li><strong>${eventLabels[response.eventName] || response.eventName}</strong>: ${status}${peopleInfo}</li>`;
     }
 
     const mailOptions = {
@@ -112,7 +112,7 @@ router.get('/:token', asyncHandler(async (req, res) => {
   existingResponses.forEach(r => {
     responses[r.event_name] = {
       willAttend: Boolean(r.will_attend),
-      plusOne: r.plus_one || 0
+      plusOne: r.will_attend ? (r.plus_one || 1) : 0
     };
   });
 
@@ -173,7 +173,8 @@ router.post('/:token/response', asyncHandler(async (req, res) => {
     }
 
     const willAttend = Boolean(eventData.attend);
-    const plusOne = Math.min(Math.max(parseInt(eventData.plusOne) || 0, 0), 10);
+    const safeTotalGuests = Math.min(Math.max(parseInt(totalGuests) || 1, 1), 20);
+    const plusOne = Math.min(Math.max(parseInt(eventData.plusOne) || 1, 1), safeTotalGuests);
 
     eventResponses.push({
       guestId: guest.id,

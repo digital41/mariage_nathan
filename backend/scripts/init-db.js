@@ -31,7 +31,7 @@ db.serialize(() => {
       guest_id INTEGER NOT NULL,
       event_name TEXT NOT NULL,
       will_attend BOOLEAN DEFAULT 0,
-      plus_one INTEGER DEFAULT 0,
+      plus_one INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (guest_id) REFERENCES guests(id),
       UNIQUE(guest_id, event_name)

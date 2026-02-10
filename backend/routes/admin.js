@@ -315,10 +315,10 @@ router.get('/stats', asyncHandler(async (req, res) => {
 
   const confirmationStats = await get(`
     SELECT
-      SUM(CASE WHEN event_name = 'mairie' AND will_attend = 1 THEN 1 + plus_one ELSE 0 END) as confirmed_mairie,
-      SUM(CASE WHEN event_name = 'vin_honneur' AND will_attend = 1 THEN 1 + plus_one ELSE 0 END) as confirmed_vin_honneur,
-      SUM(CASE WHEN event_name = 'chabbat' AND will_attend = 1 THEN 1 + plus_one ELSE 0 END) as confirmed_chabbat,
-      SUM(CASE WHEN event_name = 'houppa' AND will_attend = 1 THEN 1 + plus_one ELSE 0 END) as confirmed_houppa
+      SUM(CASE WHEN event_name = 'mairie' AND will_attend = 1 THEN plus_one ELSE 0 END) as confirmed_mairie,
+      SUM(CASE WHEN event_name = 'vin_honneur' AND will_attend = 1 THEN plus_one ELSE 0 END) as confirmed_vin_honneur,
+      SUM(CASE WHEN event_name = 'chabbat' AND will_attend = 1 THEN plus_one ELSE 0 END) as confirmed_chabbat,
+      SUM(CASE WHEN event_name = 'houppa' AND will_attend = 1 THEN plus_one ELSE 0 END) as confirmed_houppa
     FROM event_responses
   `);
 

@@ -1087,7 +1087,7 @@
                                 <th>Email</th>
                                 <th>Événement</th>
                                 <th>Présence</th>
-                                <th>+1</th>
+                                <th>Personnes</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
@@ -1620,7 +1620,7 @@
                             : '<span class="badge badge-danger">Non</span>'
                         }
                     </td>
-                    <td>${r.plus_one || 0}</td>
+                    <td>${r.will_attend ? (r.plus_one || 1) : '-'}</td>
                     <td>${formatDate(r.created_at)}</td>
                 </tr>
             `).join('');

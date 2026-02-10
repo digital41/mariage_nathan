@@ -84,7 +84,7 @@ const initDatabase = async () => {
         guest_id INTEGER NOT NULL,
         event_name TEXT NOT NULL,
         will_attend BOOLEAN DEFAULT 0,
-        plus_one INTEGER DEFAULT 0,
+        plus_one INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE CASCADE,
         UNIQUE(guest_id, event_name)
@@ -144,6 +144,17 @@ const initDatabase = async () => {
       } catch (err) {
         // La colonne existe déjà - on ignore
       }
+    }
+
+    // Migration v2 : convertir plus_one de "accompagnants" (0-based) à "total personnes" (1-based)
+    try {
+      await run('ALTER TABLE event_responses ADD COLUMN migrated_v2 INTEGER DEFAULT 0');
+      console.log('Migration v2: Conversion plus_one → nombre total de personnes...');
+      await run('UPDATE event_responses SET plus_one = 1 + plus_one WHERE will_attend = 1');
+      await run('UPDATE event_responses SET migrated_v2 = 1');
+      console.log('Migration v2: Terminée.');
+    } catch (err) {
+      // Colonne existe déjà → migration déjà effectuée
     }
 
     // Index pour améliorer les performances

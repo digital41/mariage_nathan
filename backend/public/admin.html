@@ -1941,14 +1941,8 @@
         async function openWhatsApp(guestId) {
             try {
                 const result = await apiCall(`/api/messaging/whatsapp/link/${guestId}`);
-                const link = document.createElement('a');
-                link.href = result.data.whatsappLink;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showToast('Lien WhatsApp ouvert', 'success');
+                window.location.href = result.data.whatsappLink;
+                showToast('WhatsApp ouvert', 'success');
             } catch (error) {
                 showToast(error.message, 'error');
             }

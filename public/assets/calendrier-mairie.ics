@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Mariage Dvora & Nathan//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Paris:20260527T150000
+DTEND;TZID=Europe/Paris:20260527T170000
+SUMMARY:Mariage Dvora & Nathan - Mairie
+LOCATION:Mairie du 19eme arrondissement\, 75019 Paris
+DESCRIPTION:Mariage civil de Dvora & Nathan\nMairie du 19eme arrondissement\n75019 Paris\nA 15h00 precises
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

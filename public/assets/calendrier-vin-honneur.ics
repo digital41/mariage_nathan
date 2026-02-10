@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Mariage Dvora & Nathan//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Paris:20260527T173000
+DTEND;TZID=Europe/Paris:20260527T230000
+SUMMARY:Mariage Dvora & Nathan - Vin d'Honneur / Henne
+LOCATION:ECUJE\, 119 Rue La Fayette\, 75010 Paris
+DESCRIPTION:Vin d'Honneur / Henne de Dvora & Nathan\nECUJE (Espace Culturel et Universitaire Juif d'Europe)\n119 Rue La Fayette\n75010 Paris\nA partir de 17h30
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

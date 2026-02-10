@@ -454,7 +454,45 @@ router.get('/export', asyncHandler(async (req, res) => {
 
   let data, headers, filename;
 
-  if (type === 'public') {
+  if (type === 'responses') {
+    // Export des réponses regroupées par invité, une colonne par événement avec le nombre de personnes
+    const guests = await all(`
+      SELECT
+        g.id, g.first_name, g.last_name, g.email, g.phone, g.family, g.total_guests,
+        MAX(CASE WHEN er.event_name = 'mairie' AND er.will_attend = 1 THEN er.plus_one ELSE NULL END) as mairie_personnes,
+        MAX(CASE WHEN er.event_name = 'vin_honneur' AND er.will_attend = 1 THEN er.plus_one ELSE NULL END) as vin_honneur_personnes,
+        MAX(CASE WHEN er.event_name = 'houppa' AND er.will_attend = 1 THEN er.plus_one ELSE NULL END) as houppa_personnes,
+        MAX(CASE WHEN er.event_name = 'chabbat' AND er.will_attend = 1 THEN er.plus_one ELSE NULL END) as chabbat_personnes
+      FROM guests g
+      INNER JOIN event_responses er ON er.guest_id = g.id
+      GROUP BY g.id
+      ORDER BY g.last_name, g.first_name
+    `);
+
+    headers = ['Prénom', 'Nom', 'Email', 'Téléphone', 'Famille', 'Total personnes', 'Mairie', 'Vin Honneur', 'Houppa / Soirée', 'Chabbat'];
+    filename = 'reponses-invites.csv';
+
+    const csvRows = [headers.join(';')];
+    guests.forEach(row => {
+      const formatEvent = (val) => val === null ? '-' : val;
+      csvRows.push([
+        `"${(row.first_name || '').replace(/"/g, '""')}"`,
+        `"${(row.last_name || '').replace(/"/g, '""')}"`,
+        `"${(row.email || '').replace(/"/g, '""')}"`,
+        `"${(row.phone || '').replace(/"/g, '""')}"`,
+        `"${(row.family || '').replace(/"/g, '""')}"`,
+        row.total_guests || 1,
+        formatEvent(row.mairie_personnes),
+        formatEvent(row.vin_honneur_personnes),
+        formatEvent(row.houppa_personnes),
+        formatEvent(row.chabbat_personnes)
+      ].join(';'));
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.send('\uFEFF' + csvRows.join('\n'));
+  } else if (type === 'public') {
     data = await all('SELECT * FROM public_responses ORDER BY created_at DESC');
     headers = ['ID', 'Nom', 'Personnes', 'Mairie', 'Vin Honneur', 'Chabbat', 'Houppa', 'Message', 'Date'];
     filename = 'reponses-publiques.csv';

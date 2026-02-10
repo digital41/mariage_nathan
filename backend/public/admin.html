@@ -1076,6 +1076,9 @@
                         <div class="search-box">
                             <input type="text" id="responseSearch" placeholder="Rechercher..." oninput="filterResponses()">
                         </div>
+                        <button class="btn btn-outline" onclick="exportData('responses')">
+                            Exporter CSV
+                        </button>
                     </div>
                 </div>
 
@@ -1941,7 +1944,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = type === 'public' ? 'reponses-publiques.csv' : 'invites.csv';
+                a.download = type === 'responses' ? 'reponses-invites.csv' : (type === 'public' ? 'reponses-publiques.csv' : 'invites.csv');
                 document.body.appendChild(a);
                 a.click();
                 a.remove();

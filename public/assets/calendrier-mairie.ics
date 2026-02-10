@@ -10,5 +10,15 @@ SUMMARY:Mariage Dvora & Nathan - Mairie
 LOCATION:Mairie du 19eme arrondissement\, 75019 Paris
 DESCRIPTION:Mariage civil de Dvora & Nathan\nMairie du 19eme arrondissement\n75019 Paris\nA 15h00 precises
 STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-P7D
+ACTION:DISPLAY
+DESCRIPTION:Rappel : Mariage Dvora & Nathan - Mairie dans 1 semaine
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Rappel : Mariage Dvora & Nathan - Mairie demain a 15h00
+END:VALARM
 END:VEVENT
 END:VCALENDAR

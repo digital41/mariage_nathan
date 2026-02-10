@@ -1,0 +1,24 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Mariage Dvora & Nathan//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART;TZID=Asia/Jerusalem:20260614T173000
+DTEND;TZID=Asia/Jerusalem:20260615T010000
+SUMMARY:Mariage Dvora & Nathan - Houppa / Soiree
+LOCATION:Yara\, Hadera\, Israel
+DESCRIPTION:Houppa et Soiree de Dvora & Nathan\nYara\nHadera\, Israel\nA 17h30 precises
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-P7D
+ACTION:DISPLAY
+DESCRIPTION:Rappel : Mariage Dvora & Nathan - Houppa dans 1 semaine
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Rappel : Mariage Dvora & Nathan - Houppa demain a 17h30
+END:VALARM
+END:VEVENT
+END:VCALENDAR

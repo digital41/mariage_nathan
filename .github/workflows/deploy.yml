@@ -67,7 +67,7 @@ jobs:
                   - mariage-data:/data
                 labels:
                   - traefik.enable=true
-                  - "traefik.http.routers.mariage.rule=Host(`mariage.srv1014329.hstgr.cloud`)"
+                  - "traefik.http.routers.mariage.rule=Host(`mariagedvora.nathanibgui.com`)"
                   - traefik.http.routers.mariage.entrypoints=websecure
                   - traefik.http.routers.mariage.tls.certresolver=mytlschallenge
                   - traefik.http.services.mariage.loadbalancer.server.port=3000
@@ -83,7 +83,7 @@ jobs:
             cat > .env <<'ENVFILE'
             NODE_ENV=production
             PORT=3000
-            SITE_URL=https://mariage.srv1014329.hstgr.cloud
+            SITE_URL=https://mariagedvora.nathanibgui.com
             ADMIN_PASSWORD=changeme123
             EMAIL_HOST=smtp.gmail.com
             EMAIL_PORT=587

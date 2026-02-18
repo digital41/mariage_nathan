@@ -91,8 +91,17 @@ jobs:
             EMAIL_USER=
             EMAIL_PASS=
             EMAIL_FROM=
+            N8N_WEBHOOK_URL=
             ENVFILE
             fi
+            # Toujours mettre a jour SITE_URL
+            sed -i 's|SITE_URL=.*|SITE_URL=https://mariagedvora.nathanibgui.com|' .env
+            # Backup de la base de donnees avant redeploy
+            mkdir -p /opt/mariage-nathan/backups
+            BACKUP_FILE="/opt/mariage-nathan/backups/database_$(date +%Y%m%d_%H%M%S).sqlite"
+            docker cp mariage-nathan:/data/database.sqlite "$BACKUP_FILE" 2>/dev/null && echo "Backup: $BACKUP_FILE" || echo "Pas de base existante, skip backup"
+            # Garder les 10 derniers backups
+            ls -t /opt/mariage-nathan/backups/database_*.sqlite 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null
             docker compose pull
             docker compose up -d
             docker image prune -f

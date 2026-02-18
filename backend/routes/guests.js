@@ -214,6 +214,34 @@ router.post('/:token/response', asyncHandler(async (req, res) => {
   // Envoyer une notification par email (en arrière-plan)
   sendNotificationEmail(guest, eventResponses, totalGuests, sanitizedMessage);
 
+  // Envoyer vers n8n / Google Sheets (en arrière-plan)
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (webhookUrl) {
+    const webhookData = {
+      type: 'invitation_response',
+      timestamp: new Date().toISOString(),
+      prenom: guest.first_name,
+      nom: guest.last_name,
+      email: guest.email || '',
+      telephone: guest.phone || '',
+      famille: guest.family || '',
+      total_personnes: totalGuests || 1,
+      mairie: '',
+      vin_honneur: '',
+      houppa: '',
+      chabbat: '',
+      message: sanitizedMessage || ''
+    };
+    eventResponses.forEach(r => {
+      webhookData[r.eventName] = r.willAttend ? `Oui (${r.plusOne})` : 'Non';
+    });
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookData)
+    }).catch(err => console.error('Erreur webhook n8n:', err.message));
+  }
+
   res.json({
     success: true,
     message: 'Votre réponse a été enregistrée avec succès',

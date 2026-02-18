@@ -1,0 +1,96 @@
+{
+  "name": "Mariage - Réponses vers Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mariage-responses",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true}",
+        "options": {}
+      },
+      "id": "respond-node",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1KCjGa2wApSW8ZjgZGcs8t2GEoFSq-T_MjooUAjrDs58"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.timestamp }}",
+            "Type": "={{ $json.type }}",
+            "Nom": "={{ $json.name }}",
+            "Nombre de personnes": "={{ $json.guests }}",
+            "Mairie": "={{ $json.mairie || '' }}",
+            "Vin Honneur": "={{ $json.vin_honneur || '' }}",
+            "Houppa": "={{ $json.houppa || '' }}",
+            "Chabbat": "={{ $json.chabbat || '' }}",
+            "Message": "={{ $json.message || '' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-node",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [550, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

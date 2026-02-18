@@ -9,6 +9,27 @@ const { rateLimit, loginRateLimit } = require('./middleware/auth');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 const { validatePublicResponseMiddleware } = require('./middleware/validation');
 
+// Fonction pour envoyer les données vers n8n (Google Sheets)
+const sendToN8n = async (type, payload) => {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type,
+        timestamp: new Date().toISOString(),
+        ...payload
+      })
+    });
+    console.log(`n8n webhook (${type}): ${response.status}`);
+  } catch (error) {
+    console.error('Erreur webhook n8n:', error.message);
+  }
+};
+
 // Fonction pour envoyer une notification email pour les réponses publiques
 const sendPublicResponseNotification = async (data) => {
   try {
@@ -264,6 +285,21 @@ app.post('/api/public/response', validatePublicResponseMiddleware, asyncHandler(
   // Envoyer notification par email (en arrière-plan)
   sendPublicResponseNotification(data);
 
+  // Envoyer vers n8n / Google Sheets (en arrière-plan)
+  sendToN8n('public_response', {
+    prenom: data.name,
+    nom: '',
+    email: '',
+    telephone: '',
+    famille: '',
+    total_personnes: data.guests,
+    mairie: data.mairie ? 'Oui' : 'Non',
+    vin_honneur: data.vin_honneur ? 'Oui' : 'Non',
+    houppa: data.houppa ? 'Oui' : 'Non',
+    chabbat: data.chabbat ? 'Oui' : 'Non',
+    message: data.message || ''
+  });
+
   res.status(201).json({
     success: true,
     message: 'Merci ! Votre réponse a été enregistrée avec succès',
@@ -293,6 +329,21 @@ app.post('/api/guests/public-response', validatePublicResponseMiddleware, asyncH
 
   // Envoyer notification par email (en arrière-plan)
   sendPublicResponseNotification(data);
+
+  // Envoyer vers n8n / Google Sheets (en arrière-plan)
+  sendToN8n('public_response', {
+    prenom: data.name,
+    nom: '',
+    email: '',
+    telephone: '',
+    famille: '',
+    total_personnes: data.guests,
+    mairie: data.mairie ? 'Oui' : 'Non',
+    vin_honneur: data.vin_honneur ? 'Oui' : 'Non',
+    houppa: data.houppa ? 'Oui' : 'Non',
+    chabbat: data.chabbat ? 'Oui' : 'Non',
+    message: data.message || ''
+  });
 
   res.json({
     success: true,

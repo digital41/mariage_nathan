@@ -554,4 +554,65 @@ router.get('/export', asyncHandler(async (req, res) => {
   }
 }));
 
+// POST /admin/sync-sheet - Synchroniser tous les invités vers Google Sheets via n8n
+router.post('/sync-sheet', asyncHandler(async (req, res) => {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) {
+    throw errors.badRequest('N8N_WEBHOOK_URL non configuré');
+  }
+
+  const guests = await all(`
+    SELECT g.*,
+      GROUP_CONCAT(CASE WHEN er.event_name = 'mairie' THEN
+        CASE WHEN er.will_attend THEN 'Oui (' || er.plus_one || ')' ELSE 'Non' END END) as rep_mairie,
+      GROUP_CONCAT(CASE WHEN er.event_name = 'vin_honneur' THEN
+        CASE WHEN er.will_attend THEN 'Oui (' || er.plus_one || ')' ELSE 'Non' END END) as rep_vin_honneur,
+      GROUP_CONCAT(CASE WHEN er.event_name = 'houppa' THEN
+        CASE WHEN er.will_attend THEN 'Oui (' || er.plus_one || ')' ELSE 'Non' END END) as rep_houppa,
+      GROUP_CONCAT(CASE WHEN er.event_name = 'chabbat' THEN
+        CASE WHEN er.will_attend THEN 'Oui (' || er.plus_one || ')' ELSE 'Non' END END) as rep_chabbat,
+      (SELECT message FROM messages WHERE guest_id = g.id ORDER BY created_at DESC LIMIT 1) as last_message
+    FROM guests g
+    LEFT JOIN event_responses er ON er.guest_id = g.id
+    GROUP BY g.id
+    ORDER BY g.id
+  `);
+
+  let sent = 0;
+  for (const guest of guests) {
+    const payload = {
+      id: guest.id,
+      type: 'sync',
+      timestamp: new Date().toISOString(),
+      prenom: guest.first_name,
+      nom: guest.last_name,
+      email: guest.email || '',
+      telephone: guest.phone || '',
+      famille: guest.family || '',
+      total_personnes: guest.total_guests || 1,
+      mairie: guest.rep_mairie || '',
+      vin_honneur: guest.rep_vin_honneur || '',
+      houppa: guest.rep_houppa || '',
+      chabbat: guest.rep_chabbat || '',
+      message: guest.last_message || ''
+    };
+
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      sent++;
+    } catch (err) {
+      console.error(`Sync sheet erreur pour ${guest.first_name}:`, err.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `${sent}/${guests.length} invités synchronisés vers Google Sheets`
+  });
+}));
+
 module.exports = router;

@@ -218,6 +218,7 @@ router.post('/:token/response', asyncHandler(async (req, res) => {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (webhookUrl) {
     const webhookData = {
+      id: guest.id,
       type: 'invitation_response',
       timestamp: new Date().toISOString(),
       prenom: guest.first_name,
